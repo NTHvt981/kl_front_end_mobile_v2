@@ -27,6 +27,10 @@ apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 apply plugin: 'com.google.gms.google-services'  // Google Services plugin
 android {
+    aaptOptions {
+        noCompress "tflite"
+        noCompress "lite"
+    }
     compileSdkVersion 30
 
     compileOptions {

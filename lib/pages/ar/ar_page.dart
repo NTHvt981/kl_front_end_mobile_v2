@@ -1,14 +1,18 @@
 
 
+import 'dart:developer';
+
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:do_an_ui/pages/clothes/ar_movable_item_widget.dart';
+import 'ar_movable_item_widget.dart';
 import 'package:do_an_ui/pages/clothes/movable_item_widget.dart';
 import 'package:do_an_ui/shared/drawer.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:do_an_ui/main.dart';
+import 'package:image_save/image_save.dart';
+import 'package:native_screenshot/native_screenshot.dart';
 import 'package:screenshot/screenshot.dart';
 
 class ArPage extends StatefulWidget {
@@ -127,22 +131,22 @@ class _ArPageState extends State<ArPage> with WidgetsBindingObserver {
   Future<void> saveScreenshot() async {
     String randomId = Timestamp.now().nanoseconds.toString();
 
-    //var path = await NativeScreenshot.takeScreenshot();
-    //print(path);
+    var path = await NativeScreenshot.takeScreenshot();
+    print(path);
 
-    // screenshotController.capture().then((file) async {
-    //   // storage.ref('QuanAo/$randomId.png').putFile(File.fromRawPath(file!)).then((snapshot) async {
-    //   //   String imageUrl = await snapshot.ref.getDownloadURL().then((value) => value);
-    //
-    //     // log('upload file success, url: $imageUrl');
-    //
-    //     //clothesCollectionService.create(uid, imageUrl);
-    //   // });
-    //   bool? success = await ImageSave.saveImage(file, "$randomId.png", albumName: "demo");
-    //   if (!success!)
-    //     {
-    //       log("Save not success");
-    //     }
-    // });
+    screenshotController.capture().then((file) async {
+      // storage.ref('QuanAo/$randomId.png').putFile(File.fromRawPath(file!)).then((snapshot) async {
+      //   String imageUrl = await snapshot.ref.getDownloadURL().then((value) => value);
+
+        // log('upload file success, url: $imageUrl');
+
+        //clothesCollectionService.create(uid, imageUrl);
+      // });
+      bool? success = await ImageSave.saveImage(file, "$randomId.png", albumName: "demo");
+      if (!success!)
+        {
+          log("[ERROR] Save not success");
+        }
+    });
   }
 }
