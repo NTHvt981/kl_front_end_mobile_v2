@@ -59,6 +59,17 @@ dependencies:
   camera: ^0.9.4+3
   image_save: ^5.0.0
   zoom_widget: ^0.2.1
+  photo_view: ^0.13.0
+  matrix_gesture_detector: ^0.1.0
+
+  tflite_flutter: ^0.9.0
+  google_ml_kit: ^0.7.3
+  path: ^1.8.0
+  image: ^3.0.8
+  url_launcher: ^6.0.12
+  native_screenshot: ^1.0.0
+  momo_vn: ^2.0.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -76,6 +87,7 @@ flutter:
   assets:
     - images/
     - images/bg/
+    - tfmodel/mobilefacenet.tflite
 #    - icons/
   #
   # For details regarding fonts from package dependencies,
