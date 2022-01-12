@@ -1,0 +1,275 @@
+import 'dart:developer';
+import 'dart:io';
+import 'dart:math' as math;
+
+import 'package:auto_route/src/router/auto_router_x.dart';
+import 'package:camera/camera.dart';
+import 'package:do_an_ui/pages/face_recognition/face_reg_camera.widget.dart';
+import 'package:do_an_ui/pages/face_recognition/password.modal.dart';
+import 'package:do_an_ui/services/face_recognition/camera.service.dart';
+import 'package:do_an_ui/services/face_recognition/face.database.dart';
+import 'package:do_an_ui/services/face_recognition/facenet.service.dart';
+import 'package:do_an_ui/services/face_recognition/ml_kit.service.dart';
+import 'package:do_an_ui/shared/colors.dart';
+import 'package:do_an_ui/shared/floating_camera.widget.dart';
+import 'package:do_an_ui/shared/header.widget.dart';
+import 'package:do_an_ui/shared/text.widget.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:rounded_modal/rounded_modal.dart';
+
+class SaveFace2Page extends StatefulWidget {
+  final CameraDescription cameraDescription;
+
+  const SaveFace2Page({
+    required this.cameraDescription,
+  });
+
+  @override
+  _SaveFace2PageState createState() => _SaveFace2PageState();
+}
+
+class _SaveFace2PageState extends State<SaveFace2Page> {
+  //------------------PRIVATE ATTRIBUTES------------------//
+  final _auth = FirebaseAuth.instance;
+  late String imagePath;
+  Face? faceDetected;
+  late Size imageSize;
+  late String email;
+
+  bool _detectingFaces = false;
+  bool _isPictureTaken = false;
+  bool _saving = false;
+
+  late Future _initializeControllerFuture;
+
+  //---------------service injection----------------------//
+  final _mlKitService = MLKitService();
+  final _cameraService = CameraService();
+  final _faceNetService = FaceNetService();
+  final _dataBaseService = FaceDatabase();
+
+  //------------------OVERRIDE----------------------------//
+  @override
+  void initState() {
+    super.initState();
+
+    email = _auth.currentUser!.email!;
+
+    /// starts the camera & start framing faces
+    _initializeCamera();
+  }
+  @override
+  void dispose() {
+    // Dispose of the controller when the widget is disposed.
+    _cameraService.dispose();
+    super.dispose();
+  }
+
+  //------------------PRIVATE METHODS---------------------//
+  /// starts the camera & start framing faces
+  _initializeCamera() async {
+    _initializeControllerFuture = _cameraService.startService(widget.cameraDescription);
+    await _initializeControllerFuture;
+    _mlKitService.initialize(_cameraService);
+
+    setState(() {});
+
+    _streamDetectFace();
+  }
+
+  _streamDetectFace() {
+    imageSize = _cameraService.getImageSize();
+
+    _cameraService.cameraController.startImageStream((CameraImage image) async {
+      if (_detectingFaces) return;
+      else _detectingFaces = true;
+
+      await _tryDetectFace(image);
+
+      _detectingFaces = false;
+    });
+  }
+
+  _tryDetectFace(CameraImage image) async {
+    try {
+      await _detectFace(image);
+    } catch (e) {
+      log("[ERROR] ${e.toString()}");
+    }
+  }
+
+  _detectFace(CameraImage image) async {
+    List<Face> faces = await _mlKitService.getFacesFromImage(image);
+
+    log("[DEBUG] call _detectFace");
+    if (faces.length > 0) {
+      log("[DEBUG] faces.length > 0");
+      setState(() {
+        faceDetected = faces[0];
+        _detectingFaces = true;
+      });
+
+      // if (_saving && faceDetected != null) {
+      _faceNetService.setCurrentPrediction(image, faceDetected!);
+      setState(() {
+        _saving = false;
+      });
+      // }
+    } else {
+      setState(() {
+        faceDetected = null;
+        _detectingFaces = false;
+      });
+    }
+  }
+
+  /// handles the button pressed event
+  _onTakePicture() async {
+    if (faceDetected == null) {
+      Fluttertoast.showToast(msg: "No face detected!");
+    } else {
+      showRoundedModalBottomSheet(context: context, builder: (context) {
+        return PasswordModal(
+          email: email,
+          onInputPassword: _onReceivePassword,
+        );
+      },
+        radius: 30.0,
+        color: Colors.white,
+      );
+    }
+  }
+
+  _onReceivePassword(String password) async {
+    _saving = true;
+
+    //we use delay so that _faceNetService.setCurrentPrediction get called (in dif thread)
+    await _cameraService.cameraController.stopImageStream();
+    await _saveCredentialToLocalDB(email, password);
+    Fluttertoast.showToast(msg: "Save credential success!");
+    await Future.delayed(Duration(milliseconds: 200));
+    context.router.pop();
+  }
+
+  _saveCredentialToLocalDB(String email, String password) async {
+    /// gets predicted data from facenet service (user face detected)
+    var predictedData = _faceNetService.predictedFaceData;
+
+
+    if (predictedData == null)
+    {
+      throw("[ERROR] _saveCredentialToLocalDB predictedData is null");
+    }
+    /// creates a new user in the 'database'
+    await _dataBaseService.save(
+        email,
+        password,
+        predictedData);
+
+    /// resets the face stored in the face net service
+    this._faceNetService.setPredictedData(null);
+  }
+
+  //------------------UI WIDGETS--------------------------//
+  @override
+  Widget build(BuildContext context) {
+    final double mirror = math.pi;
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+    return Scaffold(
+      body: Stack(
+          children: [
+            FutureBuilder<void>(
+              future: _initializeControllerFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  if (_isPictureTaken) {
+                    return Container(
+                      width: width,
+                      height: height,
+                      child: Transform(
+                          alignment: Alignment.center,
+                          child: FittedBox(
+                            fit: BoxFit.cover,
+                            child: Image.file(File(imagePath)),
+                          ),
+                          transform: Matrix4.rotationY(mirror)),
+                    );
+                  } else {
+                    return FaceRegCameraWidget(
+                        cameraController: _cameraService.cameraController,
+                        faceDetected: faceDetected,
+                        imageSize: imageSize
+                    );
+                  }
+                } else {
+                  return Center(child: CircularProgressIndicator());
+                }
+              },
+            ),
+            _header(),
+            Container(
+              alignment: Alignment.bottomRight,
+              padding: EdgeInsets.all(16.0),
+              child: _btnTakePicture(),),
+            Container(
+              alignment: Alignment.bottomLeft,
+              padding: EdgeInsets.all(16.0),
+              child: _btnEraseAllFaces(),)
+          ]),
+    );
+  }
+
+  Widget _header() {
+    return HeaderWidget(
+      backgroundColor: Colors.white.withOpacity(0),
+      title: TextWidget(
+        text: 'WeClothes.',
+        size: 24.0,
+        bold: true,
+        color: DARK_BLUE,
+      ),
+      textColor: DARK_BLUE,
+      canGoBack: true,
+      router: context.router,
+    );
+  }
+
+  Widget _btnTakePicture() {
+    return ClipOval(
+      child: Material(
+        color: MEDIUM_BLUE, // Button color
+        child: InkWell(
+          splashColor: DARK_BLUE, // Splash color
+          onTap: _onTakePicture,
+          child: SizedBox(
+              width: 56, height: 56,
+              child: Icon(Icons.camera_alt_outlined, color: WHITE,)
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _btnEraseAllFaces() {
+    return ClipOval(
+      child: Material(
+        color: MEDIUM_BLUE, // Button color
+        child: InkWell(
+          splashColor: DARK_BLUE, // Splash color
+          onTap: () {
+            _dataBaseService.clearAll();
+            Fluttertoast.showToast(msg: 'Remove all registered face');
+          },
+          child: SizedBox(
+              width: 56, height: 56,
+              child: Icon(Icons.refresh, color: WHITE)
+          ),
+        ),
+      ),
+    );
+  }
+}

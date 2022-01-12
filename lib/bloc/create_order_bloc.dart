@@ -1,41 +1,41 @@
 import 'dart:async';
 
-import 'package:do_an_ui/validators/create_order_validator.dart';
+import 'package:do_an_ui/validators/create_order.validator.dart';
 
 class CreateOrderBloc {
-  StreamController nameController = new StreamController();
-  StreamController phoneController = new StreamController();
-  StreamController addressController = new StreamController();
+  final _nameController = new StreamController();
+  final _phoneController = new StreamController();
+  final _addressController = new StreamController();
 
-  Stream get nameStream => nameController.stream;
-  Stream get phoneStream => phoneController.stream;
-  Stream get addressStream => addressController.stream;
+  Stream get NameStream => _nameController.stream;
+  Stream get PhoneStream => _phoneController.stream;
+  Stream get AddressStream => _addressController.stream;
 
-  bool isValidInfo(String name, String phone, String address) {
+  bool IsValidInfo(String name, String phone, String address) {
     if (!CreateOrderValidator.isValidName(name)) {
-      nameController.sink.addError('Name is not valid');
+      _nameController.sink.addError('Name is not valid');
       return false;
     }
-    nameController.sink.add('OK');
+    _nameController.sink.add('OK');
 
     if (!CreateOrderValidator.isValidPhone(phone)) {
-      phoneController.sink.addError('Phone number is not valid');
+      _phoneController.sink.addError('Phone number is not valid');
       return false;
     }
-    phoneController.sink.add('OK');
+    _phoneController.sink.add('OK');
 
     if (!CreateOrderValidator.isValidAddress(address)) {
-      addressController.sink.addError('Address is not valid');
+      _addressController.sink.addError('Address is not valid');
       return false;
     }
-    addressController.sink.add('OK');
+    _addressController.sink.add('OK');
 
     return true;
   }
 
   void dispose() {
-    nameController.close();
-    phoneController.close();
-    addressController.close();
+    _nameController.close();
+    _phoneController.close();
+    _addressController.close();
   }
 }

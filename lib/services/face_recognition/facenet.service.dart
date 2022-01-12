@@ -1,9 +1,10 @@
+import 'dart:developer' as dev;
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:do_an_ui/services/face_recognition/database.dart';
+import 'package:do_an_ui/services/face_recognition/face.database.dart';
 import 'package:camera/camera.dart';
-import 'package:do_an_ui/services/face_recognition/image_converter.dart';
+import 'package:do_an_ui/services/face_recognition/image.converter.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:image/image.dart' as imglib;
@@ -11,6 +12,7 @@ import 'package:image/image.dart' as imglib;
 class FaceNetService {
   // singleton boilerplate
   static final FaceNetService _faceNetService = FaceNetService._internal();
+  final dkey = '[FaceNetService]';
 
   factory FaceNetService() {
     return _faceNetService;
@@ -20,14 +22,14 @@ class FaceNetService {
 
   }
 
-  DataBaseService _dataBaseService = DataBaseService();
+  FaceDatabase _dataBaseService = FaceDatabase();
 
   late Interpreter _interpreter;
 
   double threshold = 1.0;
 
-  late List _predictedData;
-  List get predictedData => this._predictedData;
+  List? _predictedFaceData;
+  List? get predictedFaceData => this._predictedFaceData;
 
   //  saved users data
   dynamic data = {};
@@ -74,13 +76,27 @@ class FaceNetService {
     this._interpreter.run(input, output);
     output = output.reshape([192]);
 
-    this._predictedData = List.from(output);
+    this._predictedFaceData = List.from(output);
   }
 
   /// takes the predicted data previously saved and do inference
-  String? predict() {
+  String? predictUser() {
+    dev.log('$dkey call predictUser');
+    if (this._predictedFaceData == null)
+      {
+        throw("[ERROR] _predictedFaceData is null");
+      }
     /// search closer user prediction if exists
-    return _searchResult(this._predictedData);
+    return _searchResult(this._predictedFaceData!);
+  }
+
+  List<String> predictUsers(double threshold) {
+    dev.log('$dkey call predictUsers');
+    if (this._predictedFaceData == null) {
+      throw("[ERROR] _predictedFaceData is null");
+    }
+
+    return _searchResults(this._predictedFaceData!, threshold);
   }
 
   /// _preProess: crops the image to be more easy
@@ -142,6 +158,7 @@ class FaceNetService {
   /// [predictedData]: Array that represents the face by the MobileFaceNet model
   String? _searchResult(List predictedData) {
     Map<String, dynamic> data = _dataBaseService.db;
+    dev.log('$dkey call _searchResult 1');
 
     /// if no faces saved
     if (data.length == 0) return null;
@@ -150,8 +167,12 @@ class FaceNetService {
     String? predRes;
 
     /// search the closest result 👓
+    dev.log('$dkey call _searchResult 2');
     for (String label in data.keys) {
       currDist = _euclideanDistance(data[label], predictedData);
+
+      dev.log('$dkey calculate currDist $currDist');
+
       if (currDist <= threshold && currDist < minDist) {
         minDist = currDist;
         predRes = label;
@@ -160,11 +181,32 @@ class FaceNetService {
     return predRes;
   }
 
+  List<String> _searchResults(List predictedData, double threshold) {
+    Map<String, dynamic> data = _dataBaseService.db;
+    dev.log('$dkey call _searchResults 1');
+    List<String> predRes = new List.empty(growable: true);
+
+    /// if no faces saved
+    if (data.length == 0) return predRes;
+    double currDist = 0.0;
+
+    /// search the closest result 👓
+    dev.log('$dkey call _searchResults 2');
+    for (String label in data.keys) {
+      currDist = _euclideanDistance(data[label], predictedData);
+
+      dev.log('$dkey calculate currDist $currDist');
+
+      if (currDist <= threshold) {
+        predRes.add(label);
+      }
+    }
+    return predRes;
+  }
+
   /// Adds the power of the difference between each point
   /// then computes the sqrt of the result 📐
   double _euclideanDistance(List e1, List e2) {
-    if (e1 == null || e2 == null) throw Exception("Null argument");
-
     double sum = 0.0;
     for (int i = 0; i < e1.length; i++) {
       sum += pow((e1[i] - e2[i]), 2);
@@ -173,6 +215,6 @@ class FaceNetService {
   }
 
   void setPredictedData(value) {
-    this._predictedData = value;
+    this._predictedFaceData = value;
   }
 }

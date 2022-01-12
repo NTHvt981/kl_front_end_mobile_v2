@@ -1,5 +1,5 @@
+import 'dart:developer';
 import 'dart:ui';
-
 import 'package:camera/camera.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 
@@ -39,6 +39,8 @@ class CameraService {
       this._cameraDescription.sensorOrientation,
     );
 
+    log("[DEBUG HIEU]" + this._cameraDescription.sensorOrientation.toString());
+
     // Next, initialize the controller. This returns a Future.
     return this._cameraController.initialize();
   }
@@ -75,3 +77,7 @@ class CameraService {
     this._cameraController.dispose();
   }
 }
+
+late List<CameraDescription> g_cameraDescriptions;
+late CameraDescription g_frontCameraDescription;
+late CameraDescription g_backCameraDescription;
