@@ -1,0 +1,11 @@
+save_face_page
+initState
+->Start
+->FrameFaces // from camera, get image stream
+	->TryDetectFace(image)
+	->_mlKitService::getFacesFromImage
+	->_faceNetService::setCurrentPrediction // if saving->switch saving off
+
+//on event take pic
+onShot
+//if detect face in image -> switch saving on -> call _faceNetService::setCurrentPrediction
