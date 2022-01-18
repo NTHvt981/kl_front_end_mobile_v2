@@ -2,28 +2,31 @@
 
 import 'dart:developer';
 import 'dart:math' as math;
-
+import 'dart:ui' as ui;
 import 'package:auto_route/src/router/auto_router_x.dart';
 import 'package:camera/camera.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:diacritic/diacritic.dart';
+import 'package:do_an_ui/models/ar.model.data.dart';
 import 'package:do_an_ui/models/item.model.dart';
-import 'package:do_an_ui/models/vector.type.dart';
-import 'package:do_an_ui/pages/ar/ar_item.widget.dart';
+import 'package:do_an_ui/services/clothes/body_stat.data.dart';
+import 'package:do_an_ui/services/clothes/local_item.data.dart';
 import 'package:do_an_ui/services/face_recognition/camera.service.dart';
-import 'package:do_an_ui/services/local_item.service.dart';
+import 'package:do_an_ui/shared/ar/image_painter.dart';
+import 'package:do_an_ui/shared/clothes/type.enum.dart';
 import 'package:do_an_ui/shared/colors.dart';
-import 'package:do_an_ui/shared/header.widget.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import '../../shared/widgets/header.widget.dart';
+import '../../shared/clothes/size.enum.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
-import 'package:do_an_ui/pages/clothes/movable_item.widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_save/image_save.dart';
 import 'package:native_screenshot/native_screenshot.dart';
 import 'package:screenshot/screenshot.dart';
+import 'package:http/http.dart' as http;
 
 class ArPage extends StatefulWidget {
+
   @override
   _ArPageState createState() => _ArPageState();
 }
@@ -37,45 +40,51 @@ class _ArPageState extends State<ArPage> with WidgetsBindingObserver {
   bool _isCameraServiceInitialized = false;
 
   final _poseDetector = GoogleMlKit.vision.poseDetector();
-  ArItem _shirt = ArItem();
-  ArItem _pants = ArItem();
-  ArItem _hat = ArItem();
-  ArItem _shoes = ArItem();
-  ArItem _backpack = ArItem();
+
+  final dkey = '[DEBUG AR]';
+
+  late Size _imageSize;
+  final Map<EType, ArData> _arDatas = {
+    EType.Hat: ArData(type: EType.Hat),
+    EType.Shirt: ArData(type: EType.Shirt),
+    EType.Pants: ArData(type: EType.Pants),
+    EType.Shoes: ArData(type: EType.Shoes),
+    EType.Backpack: ArData(type: EType.Backpack),
+  };
 
   //------------------OVERRIDE METHODS----------------------//
   @override
   void initState() {
     super.initState();
     //Initialize clothes item widget
-    g_localItemsService..forEach((type , service) {
-      Item? item = service.itemBehavior.value;
+    g_localItemsData.forEach((type , data) async {
+      Item? item = data.getCurrentItem();
       if (item != null) {
-        log("[DEBUG AR] Item type${type}");
-        switch (type) {
-          case SHIRT:
-            log("[DEBUG AR] Receive Shirt");
-            _shirt.imageUrl = item.imageUrl;
-            break;
-          case PANTS:
-            log("[DEBUG AR] Receive Pants");
-            _pants.imageUrl = item.imageUrl;
-            break;
-          case HAT:
-            log("[DEBUG AR] Receive Hat");
-            _hat.imageUrl = item.imageUrl;
-            break;
-          case SHOES:
-            log("[DEBUG AR] Receive Shoes");
-            break;
-          case BACKPACK:
-            log("[DEBUG AR] Receive Backpack");
-            break;
-        }
+        _extractArDataFromItem(type, item);
       }
     });
     //Initialize cammera
     _initializeCamera();
+  }
+
+  _extractArDataFromItem(EType type, Item item) async {
+    final http.Response rawImage = await http.get(Uri.parse(item.imageUrl)).catchError((err) {
+      log(dkey + 'get rawImage fail ' + err.toString());
+    });
+    final ui.Image image = await decodeImageFromList(rawImage.bodyBytes).catchError((err) {
+      log(dkey + 'decodeImageFromList fail ' + err.toString());
+    });
+
+    final itemSize = g_localItemsData[type]!.getCurrentSize();
+    final bodySize = g_bodyStat.toEsize();
+    final scale = itemSize!= null? itemSize.isSPSize()? 1 + (itemSize.index - bodySize.index) * 0.15: 1.0: 1.0;
+    // log('$dkey itemSize is ${itemSize.name} | bodySize is ${bodySize.name}');
+    setState(() {
+      _arDatas[type]!.item = item;
+      _arDatas[type]!.image = image;
+      _arDatas[type]!.scale = scale;
+    });
+    log('$dkey _extractArDataFromItem (type $type) set scale ${scale.toString()} of item ${item.name}');
   }
 
   @override
@@ -99,11 +108,10 @@ class _ArPageState extends State<ArPage> with WidgetsBindingObserver {
     _streamTrackingPose();
   }
 
-  // DateTime _cameraTimer = DateTime.now();
-  // int _cameraWaitTime = 200;
   bool _cameraMutex = true;
 
   void _streamTrackingPose() {
+    _imageSize = _cameraService.getImageSize();
     _cameraService.cameraController.startImageStream((CameraImage image) async {
       if (_cameraMutex)
       {
@@ -122,19 +130,187 @@ class _ArPageState extends State<ArPage> with WidgetsBindingObserver {
 
     if (poses.isNotEmpty)
     {
-      Size imageSize = Size(image.width.toDouble(), image.height.toDouble());
-      log("[DEBUG AR] Image size(${imageSize.width}, ${imageSize.height})");
-      log("[DEBUG AR] Screen size(${_screenSize.width}, ${_screenSize.height})");
-      //_setShirtPosition(poses[0], imageSize, _screenSize);
+      final marks = poses[0].landmarks;
+      final leftShoulder = marks[PoseLandmarkType.leftShoulder];
+      final rightShoulder = marks[PoseLandmarkType.rightShoulder];
+      final leftHip = marks[PoseLandmarkType.leftHip];
+      final rightHip = marks[PoseLandmarkType.rightHip];
+      final leftAnkle = marks[PoseLandmarkType.leftAnkle];
+      final rightAnkle = marks[PoseLandmarkType.rightAnkle];
+      final leftEar = marks[PoseLandmarkType.leftEar];
+      final rightEar = marks[PoseLandmarkType.rightEar];
+      final rightEye = marks[PoseLandmarkType.rightEye];
+      final leftWrist = marks[PoseLandmarkType.leftWrist];
+      final rightWrist = marks[PoseLandmarkType.rightWrist];
+      final leftPinky = marks[PoseLandmarkType.leftPinky];
+      final rightPinky = marks[PoseLandmarkType.rightPinky];
+      final leftIndex = marks[PoseLandmarkType.leftIndex];
+      final rightIndex = marks[PoseLandmarkType.rightIndex];
 
-      _setAllArItemPosition(poses[0], imageSize, _screenSize);
+      if (leftShoulder != null && rightShoulder != null && leftHip != null) {
+        _setArShirt(leftShoulder: leftShoulder, rightShoulder: rightShoulder, leftHip: leftHip);
+      }
+
+      if (leftAnkle != null && rightAnkle != null && leftShoulder != null
+          && rightShoulder != null && leftHip != null) {
+        _setArPants(leftShoulder: leftShoulder, rightShoulder: rightShoulder, leftHip: leftHip,
+            leftAnkle: leftAnkle);
+      }
+
+      if (leftEar != null && rightEar != null && rightEye != null) {
+        _setArHat(leftEar: leftEar, rightEar: rightEar, rightEye: rightEye);
+      }
+
+      if (leftWrist != null && leftPinky != null && leftIndex != null
+        && leftShoulder != null && rightShoulder != null && leftHip != null && rightHip != null
+      ) {
+        _setArBackpack(leftWrist: leftWrist, leftPinky: leftPinky, leftIndex: leftIndex,
+            rightShoulder: rightShoulder, leftShoulder: leftShoulder, leftHip: leftHip, rightHip: rightHip);
+      }
+
+      if (rightWrist != null && rightPinky != null && rightIndex != null
+          && leftShoulder != null && rightShoulder != null && leftHip != null
+      ) {
+        _setArShoes(rightWrist: rightWrist, rightPinky: rightPinky, rightIndex: rightIndex,
+            rightShoulder: rightShoulder, leftShoulder: leftShoulder);
+      }
     }
 
     _cameraMutex = true;
   }
 
-  late Size _screenSize;
-  late Size _imageSize;
+
+
+  _setArHat({
+    required PoseLandmark leftEar,
+    required PoseLandmark rightEar,
+    required PoseLandmark rightEye,
+}) {
+    final disEarToEye = (rightEar.y - rightEye.y) * 2;
+    setState(() {
+      _arDatas[EType.Hat]!.area = Rect.fromLTRB(
+        math.min(leftEar.x, rightEar.x),
+        rightEye.y - disEarToEye * 3,
+        math.max(leftEar.x, rightEar.x),
+        rightEye.y - disEarToEye
+      );
+    });
+  }
+
+  _setArShirt({
+    required PoseLandmark leftShoulder,
+    required PoseLandmark rightShoulder,
+    required PoseLandmark leftHip,
+  }) {
+    if (leftShoulder.x > rightShoulder.x) {
+      setState(() {
+        _arDatas[EType.Shirt]!.canShow = true;
+      });
+    } else {
+      setState(() {
+        _arDatas[EType.Shirt]!.canShow = false;
+      });
+    }
+    setState(() {
+      _arDatas[EType.Shirt]!.area = Rect.fromLTRB(
+        math.min(leftShoulder.x, rightShoulder.x),
+        math.min(leftShoulder.y, leftHip.y),
+        math.max(leftShoulder.x, rightShoulder.x),
+        math.max(leftShoulder.y, leftHip.y),
+      );
+    });
+  }
+
+  _setArPants({
+    required PoseLandmark leftShoulder,
+    required PoseLandmark rightShoulder,
+    required PoseLandmark leftHip,
+    required PoseLandmark leftAnkle,
+  }) {
+    if (leftShoulder.x > rightShoulder.x) {
+      setState(() {
+        _arDatas[EType.Pants]!.canShow = true;
+      });
+    } else {
+      setState(() {
+        _arDatas[EType.Pants]!.canShow = false;
+      });
+    }
+    setState(() {
+      _arDatas[EType.Pants]!.area = Rect.fromLTRB(
+        math.min(leftShoulder.x, rightShoulder.x),
+        math.min(leftHip.y, leftAnkle.y),
+        math.max(leftShoulder.x, rightShoulder.x),
+        math.max(leftAnkle.y, leftHip.y),
+      );
+    });
+  }
+
+  _setArShoes({
+    required PoseLandmark rightWrist,
+    required PoseLandmark rightPinky,
+    required PoseLandmark rightIndex,
+    required PoseLandmark rightShoulder,
+    required PoseLandmark leftShoulder,
+  }) {
+    final midX = (rightWrist.x + rightPinky.x + rightIndex.x) / 3;
+    final midY = (rightWrist.y + rightPinky.y + rightIndex.y) / 3;
+    final width = (leftShoulder.x - rightShoulder.x).abs() / 2;
+    final height = width / 2;
+    setState(() {
+      _arDatas[EType.Shoes]!.area = Rect.fromLTRB(
+        midX - width/2,
+        midY - height/2,
+        midX + width/2,
+        midY + height/2,
+      );
+    });
+  }
+
+  _setArBackpack({
+    required PoseLandmark leftWrist,
+    required PoseLandmark leftPinky,
+    required PoseLandmark leftIndex,
+    required PoseLandmark rightShoulder,
+    required PoseLandmark leftShoulder,
+    required PoseLandmark leftHip,
+    required PoseLandmark rightHip,
+  }) {
+    if (leftShoulder.x > rightShoulder.x) {
+      // setState(() {
+      //   _arDatas[BACKPACK]!.canShow = false;
+      // });
+      final midX = (leftWrist.x + leftPinky.x + leftIndex.x) / 3;
+      final midY = (leftWrist.y + leftPinky.y + leftIndex.y) / 3;
+      final width = (leftShoulder.x - rightShoulder.x).abs() * 0.8;
+      final height = (leftShoulder.y - leftHip.y).abs() * 0.6;
+      setState(() {
+        _arDatas[EType.Backpack]!.area = Rect.fromLTRB(
+          midX - width/2,
+          midY - height * 1/3,
+          midX + width /2,
+          midY + height * 2/3,
+        );
+      });
+    } else {
+      // setState(() {
+      //   _arDatas[BACKPACK]!.canShow = true;
+      // });
+      final midX = (leftShoulder.x + rightShoulder.x) / 2;
+      final midY = (leftShoulder.y + leftHip.y) / 2;
+      final width = (leftShoulder.x - rightShoulder.x).abs() * 0.8;
+      final height = (leftShoulder.y - leftHip.y).abs() * 0.6;
+
+      setState(() {
+        _arDatas[EType.Backpack]!.area = Rect.fromLTRB(
+          midX - width/2,
+          midY - height/2,
+          midX + width/2,
+          midY + height/2,
+        );
+      });
+    }
+  }
 
   InputImage _cameraToInputImage(CameraImage image) {
     final WriteBuffer _allBytes = WriteBuffer();
@@ -143,7 +319,7 @@ class _ArPageState extends State<ArPage> with WidgetsBindingObserver {
     }
     final bytes = _allBytes.done().buffer.asUint8List();
 
-    _imageSize = Size(image.width.toDouble(), image.height.toDouble());
+    final imageSize = Size(image.width.toDouble(), image.height.toDouble());
 
     final InputImageRotation imageRotation =
         InputImageRotationMethods.fromRawValue(_cameraService.cameraRotation.rawValue) ??
@@ -164,7 +340,7 @@ class _ArPageState extends State<ArPage> with WidgetsBindingObserver {
     ).toList();
 
     final inputImageData = InputImageData(
-      size: _imageSize,
+      size: imageSize,
       imageRotation: imageRotation,
       inputImageFormat: inputImageFormat,
       planeData: planeData,
@@ -173,181 +349,57 @@ class _ArPageState extends State<ArPage> with WidgetsBindingObserver {
     return InputImage.fromBytes(bytes: bytes, inputImageData: inputImageData);
   }
 
-  void _setAllArItemPosition(Pose pose, Size imageSize, Size ScreenSize) {
-    if (_shirt.imageUrl != null)
-    {
-      _shirt = _setArItemPosition(pose, imageSize, ScreenSize, _shirt.imageUrl!, ArItemType.shirt);
-    }
-
-    if (_pants.imageUrl != null)
-    {
-      _pants = _setArItemPosition(pose, imageSize, ScreenSize, _pants.imageUrl!, ArItemType.pants);
-    }
-
-    if (_hat.imageUrl != null)
-    {
-      _hat = _setArItemPosition(pose, imageSize, ScreenSize, _hat.imageUrl!, ArItemType.hat);
-    }
-
-    setState(() {
-
-    });
-  }
-  ArItem _setArItemPosition(Pose pose, Size imageSize, Size ScreenSize, String url, ArItemType type) {
-    ArItem result = ArItem();
-    result.imageUrl = url;
-
-    final leftShoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
-    final rightShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
-    final leftHip = pose.landmarks[PoseLandmarkType.leftHip];
-    final rightHip = pose.landmarks[PoseLandmarkType.rightHip];
-    final leftAnkle = pose.landmarks[PoseLandmarkType.leftAnkle];
-    final rightAnkle = pose.landmarks[PoseLandmarkType.rightAnkle];
-    final leftEar = pose.landmarks[PoseLandmarkType.leftEar];
-    final rightEar = pose.landmarks[PoseLandmarkType.rightEar];
-    final nose = pose.landmarks[PoseLandmarkType.nose];
-    final leftEye = pose.landmarks[PoseLandmarkType.leftEye];
-    final leftPinky = pose.landmarks[PoseLandmarkType.leftPinky];
-    final leftIndex = pose.landmarks[PoseLandmarkType.leftIndex];
-    final leftWrist = pose.landmarks[PoseLandmarkType.leftWrist];
-
-    switch (type)
-    {
-    case ArItemType.shirt:
-      if (leftShoulder == null || rightShoulder == null ||
-          leftHip       == null || rightHip == null)
-      {
-        log("[DEBUG AR] Shirt CAN NOT PROCESS");
-        return result;
-      }
-
-      log("[DEBUG AR] rightShoulder likely hood ${rightShoulder.likelihood}");
-      log("[DEBUG AR] rightShoulder z index ${rightShoulder.z}");
-
-      log("[DEBUG AR] leftShoulder(${leftShoulder.x}, ${leftShoulder.y})");
-      log("[DEBUG AR] rightShoulder(${rightShoulder.x}, ${rightShoulder.y})");
-      log("[DEBUG AR] leftHip(${leftHip.x}, ${leftHip.y})");
-      log("[DEBUG AR] rightHip(${rightHip.x}, ${rightHip.y})");
-
-      final middleX = (rightShoulder.x + leftShoulder.x) / 2;
-      final middleY = (rightShoulder.y + rightHip.y) / 2;
-
-      result.size = Size((rightShoulder.x - leftShoulder.x).abs(), (rightShoulder.y - rightHip.y).abs());
-      result.position.x = rightShoulder.x / 3;
-      result.position.y = rightShoulder.y / 3;
-      break;
-    case ArItemType.pants:
-      if (leftAnkle   == null || rightAnkle == null ||
-          leftHip     == null || rightHip   == null)
-      {
-        log("[DEBUG AR] Pants CAN NOT PROCESS");
-        return result;
-      }
-
-      log("[DEBUG AR] leftAnkle(${leftAnkle.x}, ${leftAnkle.y})");
-      log("[DEBUG AR] rightAnkle(${rightAnkle.x}, ${rightAnkle.y})");
-      log("[DEBUG AR] leftHip(${leftHip.x}, ${leftHip.y})");
-      log("[DEBUG AR] rightHip(${rightHip.x}, ${rightHip.y})");
-
-      final middleX = (leftHip.x + rightHip.x) / 2;
-      final middleY = leftAnkle.y > rightAnkle.y ? (leftAnkle.y + rightHip.y) / 2
-                                                : (rightAnkle.y + rightHip.y) / 2;
-      final ankleWidth = (leftAnkle.x - rightAnkle.x).abs();
-      final hipWidth = (leftHip.x - rightHip.x).abs();
-      final width = math.max(ankleWidth, hipWidth);
-      final height = math.max(rightAnkle.y, leftAnkle.y) - rightHip.y;
-
-      result.size = Size(width*2, height*2);
-      result.position.x = rightHip.x / 3 - result.size.width/4;
-      result.position.y = middleY / 3 - result.size.height/4;
-      break;
-    case ArItemType.hat:
-      if (leftEye   == null || nose == null ||
-          leftEar     == null || rightEar   == null)
-      {
-        log("[DEBUG AR] Hat CAN NOT PROCESS");
-        return result;
-      }
-
-      log("[DEBUG AR] leftEye(${leftEye.x}, ${leftEye.y})");
-      log("[DEBUG AR] nose(${nose.x}, ${nose.y})");
-      log("[DEBUG AR] leftEar(${leftEar.x}, ${leftEar.y})");
-      log("[DEBUG AR] rightEar(${rightEar.x}, ${rightEar.y})");
-
-      final distNoseToEye = (nose.y - leftEye.y).abs();
-      final middleX = (leftEar.x + rightEar.x) / 2;
-      final middleY = leftEye.y - distNoseToEye;
-      final width = (leftEar.x - rightEar.x).abs() * 2;
-      final height = distNoseToEye * 2 * 2;
-      result.size = Size(width, height);
-      result.position.x = middleX / 3 + result.size.width/4;
-      result.position.y = middleY / 3;// - result.size.height/4;
-      break;
-    case ArItemType.shoes:
-      throw("Shoes not implement");
-      break;
-    case ArItemType.backpack:
-      if (leftPinky   == null || leftWrist == null || leftIndex  == null)
-      {
-        return result;
-      }
-      if (leftShoulder == null || rightShoulder == null || rightHip == null)
-      {
-        return result;
-      }
-      break;
-    }
-
-    return result;
-  }
-
-  Future<void> _saveScreenshot() async {  //event
-    String randomId = Timestamp.now().nanoseconds.toString();
-
-    var path = await NativeScreenshot.takeScreenshot();
-    print(path);
-
-    _screenshotController.capture().then((file) async {
-      bool? success = await ImageSave.saveImage(file, "$randomId.png", albumName: "demo");
-      if (!success!)
-      {
-        log("[ERROR] Save not success");
-      }
-    });
-  }
-
   //------------------UI WIDGETS--------------------------//
   @override
   Widget build(BuildContext context) {
-    _screenSize = MediaQuery.of(context).size;
-
     if (!_isCameraServiceInitialized) {
       return Container();
     }
-    return Screenshot(
-      controller: _screenshotController,
-      child: Stack(
+    return Scaffold(
+      body: Stack(
         children: [
-          // _header(),
-          FutureBuilder(
-            future: _initializeCameraFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.done) {
-                return Stack(
-                  children: [
-                    CameraPreview(_cameraService.cameraController),
-                    _pants.imageUrl != null? ArItemWidget(_pants.position, _pants.size, _pants.imageUrl!): Container(),
-                    _shirt.imageUrl != null? ArItemWidget(_shirt.position, _shirt.size, _shirt.imageUrl!): Container(),
-                    _hat.imageUrl != null? ArItemWidget(_hat.position, _hat.size, _hat.imageUrl!): Container(),
-                  ],
-                );
-              }
-              else return Center(child: CircularProgressIndicator());
-            },
+          Screenshot(
+            controller: _screenshotController,
+            child: FutureBuilder(
+              future: _initializeCameraFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  return _arContent();
+                }
+                else return Center(child: CircularProgressIndicator());
+              },
+            ),
           ),
+          _header(),
         ],
       ),
     );
+  }
+
+  Stack _arContent() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        CameraPreview(_cameraService.cameraController),
+        _paintWidget(EType.Hat),
+        _paintWidget(EType.Shirt),
+        _paintWidget(EType.Pants),
+        _paintWidget(EType.Shoes),
+        _paintWidget(EType.Backpack),
+      ],
+    );
+  }
+
+  Widget _paintWidget(EType type) {
+    return _arDatas[type]!.isValid()? CustomPaint(
+      painter: ImagePainter(
+        imageSize: _imageSize,
+        bound: _arDatas[type]!.area,
+        image: _arDatas[type]!.image,
+        item: _arDatas[type]!.item,
+        externalScale: _arDatas[type]!.scale
+      ),
+    ): Container();
   }
 
   Widget _header() {
@@ -362,6 +414,13 @@ class _ArPageState extends State<ArPage> with WidgetsBindingObserver {
       textColor: DARK_BLUE,
       // canGoBack: true,
       router: context.router,
+      canGoBack: true,
     );
+  }
+
+  String _toLog(PoseLandmark mark) {
+    final x = mark.x;
+    final y = mark.y;
+    return '($x, $y)';
   }
 }

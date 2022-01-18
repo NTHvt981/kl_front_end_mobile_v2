@@ -10,19 +10,20 @@ class ImagePainter extends material.CustomPainter {
     required this.imageSize,
     required this.image,
     required this.bound,
-    required this.item
+    required this.item,
+    this.externalScale = 1
   });
   final Size imageSize;
   final Image image;
   final Item item;
   final Rect bound;
-  late double scaleX, scaleY;
+  final double externalScale;
 
   @override
   void paint(Canvas canvas, Size size) {
-    scaleX = size.width / imageSize.width;
-    scaleY = size.height / imageSize.height;
-    final rect = _scaleRect(
+    double scaleX = size.width / imageSize.width;
+    double scaleY = size.height / imageSize.height;
+    var rect = _scaleRect(
         rect: bound,
         widgetSize: size,
         scaleX: scaleX,
@@ -34,24 +35,22 @@ class ImagePainter extends material.CustomPainter {
       ..color = material.Colors.green
       ..strokeWidth = 3.0;
 
-    final imagePaint = Paint()
-      ..style = PaintingStyle.fill;
+    var rect2 = _resizeOffset(
+      rect: rect,
+      imageRect: imageRect,
+      leftOffset: item.leftOffset,
+      topOffset: item.topOffset,
+      rightOffset: item.rightOffset,
+      bottomOffset: item.bottomOffset,
+    );
 
+    rect2 = _scale2Rect(rect: rect2, scale: externalScale);
 
     log("[DEBUG AR] rect (${rect.left.toString()}, "
         "${rect.top.toString()}, "
         "${rect.right.toString()}, "
         "${rect.bottom.toString()})");
-    canvas.drawImageRect(
-      image, imageRect,
-        _resizeOffset(
-          rect: rect,
-          imageRect: imageRect,
-          leftOffset: item.leftOffset,
-          topOffset: item.topOffset,
-          rightOffset: item.rightOffset,
-          bottomOffset: item.bottomOffset,
-        ), new Paint()
+    canvas.drawImageRect(image, imageRect, rect2, new Paint()
     );
     canvas.drawRect(rect, debugPaint);
   }
@@ -75,6 +74,17 @@ Rect _scaleRect({
       rect.top.toDouble() * scaleY,
       widgetSize.width - right.toDouble() * scaleX,
       rect.bottom.toDouble() * scaleY);
+}
+
+Rect _scale2Rect({
+  required Rect rect,
+  required double scale,
+}) {
+  final left = rect.left - (((scale - 1)/2) * rect.width);
+  final right = rect.right + (((scale - 1)/2) * rect.width);
+  final top = rect.top - (((scale - 1)/2) * rect.height);
+  final bottom = rect.bottom + (((scale - 1)/2) * rect.height);
+  return Rect.fromLTRB(left, top, right, bottom);
 }
 
 Rect _resizeOffset({

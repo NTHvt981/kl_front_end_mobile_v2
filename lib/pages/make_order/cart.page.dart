@@ -2,27 +2,29 @@ import 'dart:developer';
 
 import 'package:auto_route/src/router/auto_router_x.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:do_an_ui/models/customer.model.dart';
-import 'package:do_an_ui/models/item.model.dart';
+import 'package:do_an_ui/models/detail.model.dart';
+import 'package:do_an_ui/models/local_detail.model.dart';
 import 'package:do_an_ui/models/order.model.dart';
-import 'package:do_an_ui/models/order_detail.model.dart';
 import 'package:do_an_ui/pages/make_order/checkout.modal.dart';
+import 'package:do_an_ui/pages/make_order/cart_detail.widget.dart';
+import 'package:do_an_ui/services/clothes/local_item.data.dart';
 import 'package:do_an_ui/services/customer.service.dart';
 import 'package:do_an_ui/services/orders/delivery.data.dart';
 import 'package:do_an_ui/services/orders/discount.data.dart';
 import 'package:do_an_ui/services/orders/order.service.dart';
 import 'package:do_an_ui/services/orders/order_detail.service.dart';
 import 'package:do_an_ui/services/user.data.dart';
+import 'package:do_an_ui/shared/order_status.enum.dart';
+import '../../shared/clothes/size.enum.dart';
+import 'package:do_an_ui/shared/useful.function.dart';
 import 'package:rounded_modal/rounded_modal.dart';
 import 'package:screenshot/screenshot.dart';
-import 'item.widget.dart';
 import 'package:do_an_ui/routes/router.gr.dart';
-import 'package:do_an_ui/services/local_item.service.dart';
 import 'package:do_an_ui/shared/colors.dart';
-import 'package:do_an_ui/shared/header.widget.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
-import 'package:do_an_ui/shared/rounded_button.widget.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import '../../shared/widgets/header.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_button.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:do_an_ui/shared/values.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -41,10 +43,10 @@ class CartPage extends StatefulWidget {
 
 class _CartPageState extends State<CartPage> {
   //------------------PRIVATE ATTRIBUTES------------------//
-  List<Item> _items = [];
+  List<LocalDetail> _localDetails = [];
   int _totalCost = 0;
   final _userService = CustomerService();
-  late Customer _user;
+  final _user = g_userData.currentUser();
   final _screenshotController = ScreenshotController();
 
   //------------------OVERRIDE  METHODS----------------------//
@@ -52,28 +54,28 @@ class _CartPageState extends State<CartPage> {
   void initState() {
     super.initState();
 
-    g_localItemsService.forEach((key, s) {
-      Item? item = s.itemBehavior.value;
-
-      if (item != null)
-      {
-        _items.add(item);
-        _totalCost += item.price;
-        log('[DEBUG CART] update total cost ${_totalCost.toString()}');
-      }
+    DiscountData().usedTickets = 0;
+    DiscountData().points = 0;
+    g_localItemsData.forEach((type, data) {
+      data.getItems().forEach((key, item) {
+        final size = g_localItemsData[type]!.getSizes()[key];
+        var localItem = LocalDetail(item: item, size: size);
+        _localDetails.add(localItem);
+      });
     });
+    _calculateTotalCost();
 
-    if (_items.isEmpty) {
+    if (_localDetails.isEmpty) {
       Fluttertoast.showToast(msg: "There are no item to purchase");
 
       context.router.pop();
     }
+  }
 
-    _user = g_userData.currentUser();
-    g_userData.getStream().listen((user) {
-      setState(() {
-        _user = user;
-      });
+  void _calculateTotalCost() {
+    _totalCost = 0;
+    _localDetails.forEach((detail) {
+      _totalCost += detail.item.price * detail.amount;
     });
   }
 
@@ -126,9 +128,23 @@ class _CartPageState extends State<CartPage> {
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: ListView.builder(
               itemBuilder: (context, position) {
-                return ItemWidget(item: _items[position]);
+                return CartDetailWidget(
+                  detail: _localDetails[position],
+                  onRemove: onRemoveDetail,
+                  onChangeAmount: (int amount) {
+                    _calculateTotalCost();
+                    setState(() {
+                      _localDetails[position].amount = amount;
+                    });
+                  },
+                  onChangeSize: (ESize size) {
+                    setState(() {
+                      _localDetails[position].size = size;
+                    });
+                  },
+                );
               },
-              itemCount: _items.length,
+              itemCount: _localDetails.length,
             ),
           ),
         ),
@@ -167,24 +183,23 @@ class _CartPageState extends State<CartPage> {
     _user.accumulate(order);
     _user.useTickets(DiscountData().usedTickets);
     await _userService.update(_user);
-    _updateOrderAndOrderDetails(order, _items);
+    _updateOrderAndOrderDetails(order, _localDetails);
   }
 
   Order _createOrder() {
-    Order order = new Order();
-
-    order.id = orderService.getId();
-    order.userId = widget.userId;
-
-    order.userName = DeliveryData().name;
-    order.phoneNumber = DeliveryData().phoneNumber;
-    order.address = DeliveryData().address;
+    Order order = new Order(
+      id: formatID(g_orderService.getId()),
+      userId: _user.id,
+      userName: DeliveryData().name,
+      phoneNumber: DeliveryData().phoneNumber,
+      address: DeliveryData().address,
+      createdTime: Timestamp.now(),
+      updatedTime: Timestamp.now(),
+      status: EOrderStatus.Init,
+    );
     order.imageUrl = '''https://firebasestorage.googleapis.com/v0/b/doan1-6aa37.appspot.com/o/HinhCoSan%2FCard%20(1).png?alt=media&token=5d92a8f9-686b-4e15-bb03-6602470ce999''';
-
-    order.createdTime = Timestamp.now();
-    order.state = ORDER_STATE_INIT;
     order.total = _totalCost;
-    order.discount = 0; // temp
+    order.discount = 0;
 
     return order;
   }
@@ -193,22 +208,26 @@ class _CartPageState extends State<CartPage> {
     order.applyDiscount(tickets);
   }
 
-  Future<void> _updateOrderAndOrderDetails(Order order, List<Item> items) async {
-    items.forEach((item) async {
-      OrderDetail orderDetail = new OrderDetail();
-      orderDetail.id = orderService.getId();
-      orderDetail.orderId = order.id;
-      orderDetail.itemId = item.id;
+  Future<void> _updateOrderAndOrderDetails(Order order, List<LocalDetail> localDetails) async {
+    localDetails.forEach((localDetail) async {
+      Detail detail = new Detail(
+        id: g_orderService.getId(),
+        orderId: order.id,
+        itemId: localDetail.item.id,
+        imageUrl: localDetail.item.imageUrl,
+        name: localDetail.item.name,
+        price: localDetail.item.price,
+        amount: localDetail.amount,
+        size: localDetail.size,
+      );
 
-      orderDetail.imageUrl = item.imageUrl;
-      orderDetail.name = item.name;
-      orderDetail.price = item.price;
-
-      await orderDetailService.create(orderDetail);
+      await g_orderDetailService.create(detail);
     });
 
-    orderService.create(order).then((value) {
+    g_orderService.create(order).then((value) {
       Fluttertoast.showToast(msg: 'Order successfully!');
+      DiscountData().usedTickets = 0;
+      DiscountData().points = 0;
       context.router.pop();
       context.router.popAndPush(OrderSuccessPageRoute(userId: widget.userId));
     }).catchError((err) {
@@ -241,5 +260,12 @@ class _CartPageState extends State<CartPage> {
     }
 
     return true;
+  }
+
+  onRemoveDetail(LocalDetail detail) {
+    _calculateTotalCost();
+    setState(() {
+      _localDetails.remove(detail);
+    });
   }
 }

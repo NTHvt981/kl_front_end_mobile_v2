@@ -1,6 +1,6 @@
 
 import 'package:do_an_ui/models/news.model.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:do_an_ui/shared/useful.function.dart';
 import 'package:flutter/material.dart';
 import 'package:transparent_image/transparent_image.dart';

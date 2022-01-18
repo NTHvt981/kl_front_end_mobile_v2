@@ -13,12 +13,12 @@ import 'package:flutter/material.dart';
 import 'package:do_an_ui/routes/router.gr.dart';
 import 'package:flutter_icons/flutter_icons.dart';
 
-class SettingDrawerWidget extends StatefulWidget {
+class SettingDrawer extends StatefulWidget {
   @override
-  _SettingDrawerWidgetState createState() => _SettingDrawerWidgetState();
+  _SettingDrawerState createState() => _SettingDrawerState();
 }
 
-class _SettingDrawerWidgetState extends State<SettingDrawerWidget> {
+class _SettingDrawerState extends State<SettingDrawer> {
   //------------------PRIVATE ATTRIBUTES------------------//
   final _customerService = new CustomerService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -69,10 +69,6 @@ class _SettingDrawerWidgetState extends State<SettingDrawerWidget> {
     );
   }
 
-  void _goToPaymentMethod() {
-    context.router.push(PaymentInfoPageRoute(userId: _user.id));
-  }
-
   void _goToWardrobe() {
     context.router.push(CollectionListPageRoute(userId: _user.id));
   }
@@ -110,7 +106,6 @@ class _SettingDrawerWidgetState extends State<SettingDrawerWidget> {
             _userInfo(),
             _btnGoToCart(),
             _btnWardrobe(),
-            _btnPaymentMethods(),
             _btnOrderHistory(),
             _btnFaceRegister(),
             Divider(),
@@ -134,14 +129,6 @@ class _SettingDrawerWidgetState extends State<SettingDrawerWidget> {
   ListTile _btnWardrobe() {
     return ListTile(
         leading: Icon(FontAwesome5.heart, color: WHITE,),
-        title: _whiteTxt('Payment methods', FONT_SIZE_2),
-        onTap: _goToPaymentMethod
-    );
-  }
-
-  ListTile _btnPaymentMethods() {
-    return ListTile(
-        leading: Icon(Icons.credit_card, color: WHITE,),
         title: _whiteTxt('My Wardrobe', FONT_SIZE_2),
         onTap: _goToWardrobe
     );
@@ -224,5 +211,12 @@ class _SettingDrawerWidgetState extends State<SettingDrawerWidget> {
 
   _close() {
     Navigator.of(context).pop();
+  }
+
+  @override
+  void setState(fn) {
+    if(mounted) {
+      super.setState(fn);
+    }
   }
 }

@@ -2,8 +2,8 @@ import 'dart:developer';
 
 import 'package:do_an_ui/models/chat.model.dart';
 import 'package:do_an_ui/shared/colors.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:flutter/material.dart';
 
 class ChatWidget extends StatelessWidget {

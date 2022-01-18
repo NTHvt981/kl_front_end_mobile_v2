@@ -10,19 +10,18 @@ const IS_OVER = 'KetThuc';
 
 class Chat {
   late String id;
-  late String creatorId;
-  late String creatorName;
-  late String title;
-  late bool createdByAdmin;
-  late Timestamp createdTime;
-  late bool isOver;
+  String creatorId;
+  String creatorName;
+  String title;
+  bool createdByAdmin = false;
+  Timestamp createdTime = Timestamp.now();
+  bool isOver = false;
 
-  Chat() {
-    createdTime = Timestamp.now();
-
-    createdByAdmin = false;
-    isOver = false;
-
+  Chat({
+    required this.creatorId,
+    required this.creatorName,
+    required this.title,
+}) {
     String timeSec = createdTime.toDate().millisecondsSinceEpoch.toString();
     id = 'TIN-NHAN' + '-' +
         timeSec.substring(0, 3) + '-' +

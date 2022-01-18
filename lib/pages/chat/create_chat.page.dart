@@ -5,15 +5,17 @@ import 'package:do_an_ui/models/chat.model.dart';
 import 'package:do_an_ui/models/message.model.dart';
 import 'package:do_an_ui/services/message.service.dart';
 import 'package:do_an_ui/services/chat.service.dart';
+import 'package:do_an_ui/services/user.data.dart';
 import 'package:do_an_ui/shared/bottom_nav.widget.dart';
 import 'package:do_an_ui/shared/colors.dart';
 import 'package:do_an_ui/shared/icons.dart';
-import '../../shared/label.widget.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
-import 'package:do_an_ui/shared/rounded_button.widget.dart';
-import 'package:do_an_ui/shared/rounded_edit.widget.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../shared/widgets/label.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_button.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_edit.widget.dart';
 import 'package:do_an_ui/shared/setting.drawer.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:do_an_ui/shared/values.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -33,6 +35,8 @@ class CreateChatPage extends StatefulWidget {
 class _CreateChatPageState extends State<CreateChatPage> {
   TextEditingController _titleCon = new TextEditingController();
   TextEditingController _contentCon = new TextEditingController();
+  final _userData = g_userData;
+  final _auth = FirebaseAuth.instance;
   final dkey = '[DEBUG CreateMessagePage]';
 
   //------------------PRIVATE METHODS---------------------//
@@ -40,12 +44,11 @@ class _CreateChatPageState extends State<CreateChatPage> {
     String title = _titleCon.text;
     String content = _contentCon.text;
 
-    Chat chat = new Chat();
-
-    chat.creatorId = widget.userId;
-    chat.title = title;
-    chat.creatorName = 'USER';
-
+    Chat chat = new Chat(
+      creatorId: widget.userId,
+      creatorName: _auth.currentUser!.email!,
+      title: title,
+    );
     g_chatMessage.create(chat);
 
     Message message = new Message();
@@ -69,7 +72,7 @@ class _CreateChatPageState extends State<CreateChatPage> {
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      drawer: SettingDrawerWidget(),
+      drawer: SettingDrawer(),
       body: SingleChildScrollView(
         reverse: true,
         child: Padding(
@@ -84,7 +87,7 @@ class _CreateChatPageState extends State<CreateChatPage> {
         ),
       ),
       // bottomNavigationBar: BottomNavWidget(index: 2,),
-      endDrawer: SettingDrawerWidget(),
+      endDrawer: SettingDrawer(),
     );
   }
 

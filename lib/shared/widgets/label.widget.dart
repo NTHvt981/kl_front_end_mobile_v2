@@ -1,4 +1,4 @@
-import 'package:do_an_ui/shared/text.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:do_an_ui/shared/values.dart';
 import 'package:flutter/material.dart';
 

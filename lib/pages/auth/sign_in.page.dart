@@ -1,18 +1,23 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:auto_route/auto_route.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:do_an_ui/models/token.model.dart';
 import 'package:do_an_ui/routes/router.gr.dart';
+import 'package:do_an_ui/services/pn/pn.service.dart';
+import 'package:do_an_ui/services/pn/token.service.dart';
 import 'package:do_an_ui/services/user.data.dart';
 import 'package:do_an_ui/shared/colors.dart';
 import 'package:do_an_ui/shared/common.dart';
 import 'package:do_an_ui/shared/icons.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import '../../shared/label.widget.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
-import 'package:do_an_ui/shared/rounded_button.widget.dart';
-import 'package:do_an_ui/shared/rounded_edit.widget.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import '../../shared/widgets/label.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_button.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_edit.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:do_an_ui/shared/values.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -79,10 +84,10 @@ class _SignInPageState extends State<SignInPage> {
 
   void _tryGoToApp(User user) async {
     await user.reload();
-    g_userData = UserData(uid: user.uid);
     if (user.emailVerified) {
       // await Fluttertoast.showToast(msg: 'Sign in success');
       g_userData = UserData(uid: user.uid);
+      await _trackToken(uid: user.uid);
       _goToApp();
     } else {
       // await Fluttertoast.showToast(msg: 'Your email has not yet verified!');
@@ -92,7 +97,21 @@ class _SignInPageState extends State<SignInPage> {
   }
 
   void _goToApp() {
+
     context.router.push(NewsListPageRoute());
+  }
+
+  Future _trackToken({required String uid}) async {
+    String? fcmToken = await g_pnService.getToken();
+
+    if (fcmToken != null) {
+      Token token = Token(
+        token: fcmToken,
+        createAt: Timestamp.now(),
+        platform: Platform.operatingSystem
+      );
+      await g_tokenService.create(uid, token);
+    }
   }
 
   void _reSendVerifyEmail(User user) {

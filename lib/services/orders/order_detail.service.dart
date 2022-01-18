@@ -1,32 +1,41 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:do_an_ui/models/order_detail.model.dart';
+import 'package:do_an_ui/models/detail.model.dart';
 
 class OrderDetailService {
   FirebaseFirestore firestore = FirebaseFirestore.instance;
-  String root = 'DonHang';
-  String nextRoot = 'ChiTietDonHang';
+  final root = 'DonHang';
+  final nextRoot = 'ChiTietDonHang';
+  final dkey = '[OrderDetailService]';
 
   String getId() {
     return firestore.collection(root).doc().id;
   }
 
-  Future<List<OrderDetail>> readAllOnce(String orderId) {
+  Future<List<Detail>> readAllOnce(String orderId) {
     return firestore.collection(root).doc(orderId)
         .collection(nextRoot).get().then((snapshot) {
-      List<OrderDetail> details = [];
+      List<Detail> details = [];
 
       snapshot.docs.forEach((docSnap) {
-        details.add(OrderDetail.fromMap(docSnap.data()));
+        details.add(Detail.fromMap(docSnap.data()));
       });
 
       return details;
     });
   }
 
-  Future<void> create(OrderDetail detail) {
+  // Future<void> create(OrderDetail detail) {
+  //   return firestore.collection(root).doc(detail.orderId)
+  //       .collection(nextRoot).doc(detail.id).set(detail.toMap());
+  // }
+  Future<void> create(Detail detail) {
     return firestore.collection(root).doc(detail.orderId)
-        .collection(nextRoot).doc(detail.id).set(detail.toMap());
+        .collection(nextRoot).doc(detail.id).set(detail.toMap()).catchError((err) {
+      log('$dkey add detail fail, error ${err.toString()}');
+    });
   }
 }
 
-final orderDetailService = OrderDetailService();
+final g_orderDetailService = OrderDetailService();

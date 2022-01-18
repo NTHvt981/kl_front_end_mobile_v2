@@ -4,10 +4,9 @@ import 'package:do_an_ui/pages/order/order.widget.dart';
 import 'package:do_an_ui/routes/router.gr.dart';
 import '../../services/orders/order.service.dart';
 import 'package:do_an_ui/shared/colors.dart';
-import 'package:do_an_ui/shared/header.widget.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
-import 'package:do_an_ui/shared/setting.drawer.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import '../../shared/widgets/header.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:flutter/material.dart';
 
 class OrderListPage extends StatefulWidget {
@@ -31,9 +30,10 @@ class _OrderListPageState extends State<OrderListPage> {
   void initState() {
     super.initState();
 
-    orderService.readAllLive(widget.userId).listen((value) {
+    g_orderService.readAllLive(widget.userId).listen((orders) {
+      orders.sort((a, b) => a.createdTime.compareTo(b.createdTime));
       setState(() {
-        _orders = value;
+        _orders = orders.reversed.toList();
       });
     });
   }
@@ -47,10 +47,14 @@ class _OrderListPageState extends State<OrderListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: WHITE,
       body: Column(
         children: [
           _header(context),
-          _orderList(),
+          PercentageSizeWidget(
+            percentageHeight: 0.9,
+            child: _orderList(),
+          ),
         ],
       ),
     );
@@ -70,17 +74,22 @@ class _OrderListPageState extends State<OrderListPage> {
 
   PercentageSizeWidget _orderList() {
     return PercentageSizeWidget(
-      percentageHeight: 0.9,
       child: Container(
         color: WHITE,
-        padding: EdgeInsets.symmetric(horizontal: 16.0),
         child: ListView.builder(
           itemBuilder: (context, position) {
-            return OrderWidget(data: _orders[position], onSelect: _onSelect,);
+            return OrderWidget(order: _orders[position], onSelect: _onSelect,);
           },
           itemCount: _orders.length,
         ),
       ),
     );
+  }
+
+  @override
+  void setState(fn) {
+    if(mounted) {
+      super.setState(fn);
+    }
   }
 }

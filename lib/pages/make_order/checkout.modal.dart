@@ -6,8 +6,8 @@ import 'package:do_an_ui/routes/router.gr.dart';
 import 'package:do_an_ui/services/orders/discount.data.dart';
 import 'package:do_an_ui/shared/colors.dart';
 import 'package:do_an_ui/shared/icons.dart';
-import 'package:do_an_ui/shared/rounded_button.widget.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_button.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:do_an_ui/shared/values.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -77,8 +77,6 @@ class _CheckoutModalState extends State<CheckoutModal> {
         Divider(),
         _deliveryTile(context),
         Divider(),
-        _paymentTile(),
-        Divider(),
         _totalCostTile(),
         Divider(),
         _discountTile(),
@@ -142,25 +140,6 @@ class _CheckoutModalState extends State<CheckoutModal> {
           bold: true,
         ),
         onTap: _goToDelivery,
-      ),
-    );
-  }
-
-  Widget _paymentTile() {
-    return _tile(
-      TextWidget(
-        text: 'Payment',
-        size: _sfSize,
-        bold: true,
-      ),
-      GestureDetector(
-        child: TextWidget(
-          text: 'Choose payment >',
-          size: _sfSize,
-          color: DARK_BLUE,
-          bold: true,
-        ),
-        onTap: _goToPayment,
       ),
     );
   }

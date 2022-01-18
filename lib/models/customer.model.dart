@@ -1,7 +1,10 @@
+import 'dart:developer';
+
 import 'package:do_an_ui/models/order.model.dart';
 
 const ID = 'Ma';
 const NAME = 'HoTen';
+const EMAIL = 'Email';
 const PHONE_NUMBER = 'SoDienThoai';
 const ADDRESS = 'DiaChi';
 const IMAGE = 'HinhAnh';
@@ -11,14 +14,14 @@ const TICKET = 'SoPhieuKhuyenMai';
 class Customer {
   late String id;
   late String name;
+  late String email;
   late String phoneNumber;
   late String address;
   late String imageUrl;
   late int point;
   late int ticket;
 
-  Customer(String _id) {
-    id = _id;
+  Customer({required this.id, required this.email}) {
     point = 0;
     ticket = 0;
     name = "";
@@ -30,6 +33,7 @@ class Customer {
   Map<String, dynamic> toMap() => {
     ID: id,
     NAME: name,
+    EMAIL: email,
     PHONE_NUMBER: phoneNumber,
     ADDRESS: address,
     IMAGE: imageUrl,
@@ -40,6 +44,7 @@ class Customer {
   Customer.fromMap(Map<String, dynamic> map):
         assert(map[ID] != null),
         id = map[ID],
+        email = map[EMAIL],
         name = map[NAME] != null? map[NAME]: '',
         phoneNumber = map[PHONE_NUMBER] != null? map[PHONE_NUMBER]: '',
         address = map[ADDRESS] != null? map[ADDRESS]: '',
@@ -61,6 +66,7 @@ class Customer {
   }
 
   void useTickets(int tickets) {
+    log('[CustomerModel] current tickets ${ticket.toString()} ticket used ${tickets.toString()}');
     ticket -= tickets;
   }
 }

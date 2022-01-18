@@ -1,6 +1,8 @@
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:do_an_ui/shared/order_status.enum.dart';
+import 'package:flutter/cupertino.dart';
 
 const ID = 'Ma';
 const USER_ID = 'MaKhachHang';
@@ -10,31 +12,37 @@ const PHONE_NUMBER = 'SoDienThoai';
 const ADDRESS = 'DiaChi';
 
 const CREATED_TIME = 'ThoiGianDatHang';
+const UPDATED_TIME = 'ThoiGianCapNhat';
 const STATE = 'TinhTrang';
 const TOTAL = 'TongCong';
 const DISCOUNT = 'KhuyenMai';
 const TICKETS_USED = 'PhieuSuDung';
 const IMAGE_URL = 'HinhAnh';
 
-const ORDER_STATE_INIT = 'Taking order';
-const ORDER_STATE_DELIVERY = 'Delivery';
-const ORDER_STATE_SUCCESS = 'Finish';
-const ORDER_STATE_CANCELED = 'Cancel';
-
 class Order {
-  late String id;
-  late String userId;
-  late String userName;
-  late String phoneNumber;
-  late String address;
-  late Timestamp createdTime;
-  late String state;
+  String id;
+  String userId;
+  String userName;
+  String phoneNumber;
+  String address;
+  Timestamp createdTime;
+  Timestamp updatedTime;
+  EOrderStatus status;
   int total = 0;
   int discount = 0;
   int ticketsUsed = 0;
   String imageUrl = '';
 
-  Order();
+  Order({
+    required this.id,
+    required this.userId,
+    required this.userName,
+    required this.phoneNumber,
+    required this.address,
+    required this.createdTime,
+    required this.updatedTime,
+    required this.status,
+});
 
   Map<String, dynamic> toMap() => {
     ID: id,
@@ -45,7 +53,8 @@ class Order {
     ADDRESS: address,
 
     CREATED_TIME: createdTime,
-    STATE: state,
+    UPDATED_TIME: updatedTime,
+    STATE: status.id,
     TOTAL: total,
     DISCOUNT: discount,
     TICKETS_USED: ticketsUsed,
@@ -62,7 +71,8 @@ class Order {
         address = map[ADDRESS],
 
         createdTime = map[CREATED_TIME] as Timestamp,
-        state = map[STATE],
+        updatedTime = map[UPDATED_TIME] as Timestamp,
+        status = (map[STATE] as String).toOStatus(),
         total = map[TOTAL],
         imageUrl = map[IMAGE_URL],
         discount = map[DISCOUNT],
@@ -75,6 +85,6 @@ class Order {
   //each ticket use discount for 5.000 VNĐ
   void applyDiscount(int tickets) {
     ticketsUsed = tickets;
-    discount = tickets * 5000;
+    discount = tickets * 10000;
   }
 }

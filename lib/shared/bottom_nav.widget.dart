@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:auto_route/auto_route.dart';
 import 'package:do_an_ui/routes/router.gr.dart';
 import 'package:do_an_ui/shared/colors.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -58,6 +58,7 @@ class _BottomNavWidgetState extends State<BottomNavWidget> {
         context.router.popAndPush(NewsListPageRoute());
         break;
       case CLOTHES_PAGE_ID:
+        // context.router.popAndPush(ClothesDetailPageRoute(userId: userId));
         context.router.popAndPush(ClothesDetailPageRoute(userId: userId));
         break;
       case CHAT_PAGE_ID:

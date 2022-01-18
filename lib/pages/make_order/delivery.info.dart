@@ -4,13 +4,13 @@ import 'package:do_an_ui/services/customer.service.dart';
 import 'package:do_an_ui/services/orders/delivery.data.dart';
 import 'package:do_an_ui/services/user.data.dart';
 import 'package:do_an_ui/shared/colors.dart';
-import 'package:do_an_ui/shared/header.widget.dart';
+import '../../shared/widgets/header.widget.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import '../../shared/label.widget.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
-import 'package:do_an_ui/shared/rounded_button.widget.dart';
-import 'package:do_an_ui/shared/rounded_edit.widget.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import '../../shared/widgets/label.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_button.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_edit.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:do_an_ui/shared/values.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -229,7 +229,7 @@ class _DeliveryInfoPageState extends State<DeliveryInfoPage> {
         },
         activeColor: DARK_BLUE,
       ),
-      Expanded(child: LabelWidget1(text: 'Would you like to update delivery info to profile ?',))
+      Expanded(child: LabelWidget1(text: 'Set as default ?',))
     ],);
   }
 }

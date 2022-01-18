@@ -7,11 +7,11 @@ import 'package:do_an_ui/routes/router.gr.dart';
 import 'package:do_an_ui/services/chat.service.dart';
 import 'package:do_an_ui/shared/bottom_nav.widget.dart';
 import 'package:do_an_ui/shared/colors.dart';
-import 'package:do_an_ui/shared/header.widget.dart';
+import '../../shared/widgets/header.widget.dart';
 import 'package:do_an_ui/shared/icons.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
 import 'package:do_an_ui/shared/setting.drawer.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:do_an_ui/shared/values.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -39,7 +39,6 @@ class _ChatListPageState extends State<ChatListPage> {
 
     g_chatMessage.readAllLive(widget.userId).listen((data) {
       log(dkey + 'number of message: ${data.length}');
-      log(dkey + 'Message id: ${data[0].id}');
       setState(() {
         _chats = data;
       });
@@ -52,7 +51,7 @@ class _ChatListPageState extends State<ChatListPage> {
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      drawer: SettingDrawerWidget(),
+      drawer: SettingDrawer(),
       body: Container(
         color: WHITE,
         child: Column(
@@ -63,7 +62,7 @@ class _ChatListPageState extends State<ChatListPage> {
         ),
       ),
       bottomNavigationBar: BottomNavWidget(index: 2,),
-      endDrawer: SettingDrawerWidget(),
+      endDrawer: SettingDrawer(),
     );
   }
 
@@ -93,7 +92,7 @@ class _ChatListPageState extends State<ChatListPage> {
   }
 
   _onSelectChat(Chat chat) {
-    context.router.push(MessageListPageRoute(userId: widget.userId, chat: chat));
+    context.router.push(MessageListPageRoute(chat: chat));
   }
 
   _goToCreateChat() {

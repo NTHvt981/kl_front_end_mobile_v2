@@ -1,11 +1,12 @@
 import 'package:auto_route/src/router/auto_router_x.dart';
 import 'package:do_an_ui/shared/colors.dart';
-import 'package:do_an_ui/shared/header.widget.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
-import 'package:do_an_ui/shared/rounded_button.widget.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import '../../shared/widgets/header.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_button.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 class LoadingTestPage extends StatefulWidget {
   @override
@@ -53,6 +54,9 @@ class _LoadingTestPageState extends State<LoadingTestPage> {
   }
 
   _onTap() async {
-
+    EasyLoading.show(status: 'Loading...');
+    await Future.delayed(Duration(seconds: 2));
+    await EasyLoading.dismiss();
+    EasyLoading.showSuccess('Done');
   }
 }

@@ -15,11 +15,15 @@ class TranslationService {
   final translateLanguageModelManager = GoogleMlKit.nlp.translateLanguageModelManager();
 
   //------------------PUBLIC METHODS----------------------//
-  Future<String> Translate(String text, String sourceLang) async
+  Future<String> Translate({
+    required String text,
+    required String sourceLang,
+    required String targetLang
+  }) async
   {
     final _translator = GoogleMlKit.nlp.onDeviceTranslator(
         sourceLanguage: sourceLang,
-        targetLanguage: TranslateLanguage.ENGLISH
+        targetLanguage: targetLang
     );
 
     await translateLanguageModelManager.isModelDownloaded(sourceLang).then((isSupport) async {
@@ -28,6 +32,15 @@ class TranslationService {
           await translateLanguageModelManager.downloadModel(sourceLang, isWifiRequired: true);
         }
     });
+
+    if (targetLang != TranslateLanguage.ENGLISH) {
+      await translateLanguageModelManager.isModelDownloaded(targetLang).then((isSupport) async {
+        if (!isSupport)
+        {
+          await translateLanguageModelManager.downloadModel(targetLang, isWifiRequired: true);
+        }
+      });
+    }
 
     return _translator.translateText(text);
   }

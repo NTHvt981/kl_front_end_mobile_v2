@@ -1,17 +1,18 @@
+import 'dart:developer';
+
 import 'package:auto_route/auto_route.dart';
-import 'package:do_an_ui/shared/bottom_nav.widget.dart';
-import 'package:do_an_ui/shared/colors.dart';
-import 'package:do_an_ui/shared/header.widget.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
-import 'package:do_an_ui/shared/setting.drawer.dart';
-import 'package:do_an_ui/models/clothes_collection.model.dart';
-import 'package:do_an_ui/models/item.model.dart';
+import 'package:do_an_ui/models/collection.model.dart';
 import 'package:do_an_ui/pages/clothes/collection.widget.dart';
-import 'package:do_an_ui/routes/router.gr.dart';
-import 'package:do_an_ui/services/clothes_collection.service.dart';
-import 'package:do_an_ui/services/item.service.dart';
-import 'package:do_an_ui/services/local_item.service.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import 'package:do_an_ui/services/clothes/collection.service.dart';
+import 'package:do_an_ui/services/clothes/item.service.dart';
+import 'package:do_an_ui/services/clothes/local_item.data.dart';
+import 'package:do_an_ui/shared/clothes/type.enum.dart';
+import 'package:do_an_ui/shared/colors.dart';
+import '../../shared/widgets/header.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
+import 'package:do_an_ui/models/item.model.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:flutter/material.dart';
 
 class CollectionListPage extends StatefulWidget {
@@ -28,14 +29,16 @@ class CollectionListPage extends StatefulWidget {
 
 class _CollectionListPageState extends State<CollectionListPage> {
   //------------------PRIVATE ATTRIBUTES------------------//
-  List<ClothesCollection> _collections = [];
+  List<Collection> _collections = [];
+  final dkey = '[CollectionList2Page]';
 
   //------------------OVERRIDE  METHODS----------------------//
   @override
   void initState() {
     super.initState();
+    log('$dkey call initState');
 
-    clothesCollectionService.readAllLive(widget.userId)
+    g_collection2Service.readAllLive(widget.userId)
         .listen((value) {
           if (mounted)
             setState(() {
@@ -45,27 +48,62 @@ class _CollectionListPageState extends State<CollectionListPage> {
   }
 
   //------------------PRIVATE METHODS---------------------//
-  _onSelectCollection(ClothesCollection collection) {
-    if (collection.hatId.isNotEmpty)
-      g_itemService.readOnce(collection.hatId).then((value) => g_localItemsService[HAT]!.set(value));
+  _onSelectCollection(Collection collection) async {
+    EasyLoading.show(status: 'Loading...');
 
-    if (collection.shirtId.isNotEmpty)
-      g_itemService.readOnce(collection.shirtId).then((value) => g_localItemsService[SHIRT]!.set(value));
+    final hatData = g_localItemsData[EType.Hat]!;
+    hatData.removeAllItems();
+    await Future.forEach(collection.hatIds, (String id) async {
+      final Item item = await g_itemService.readOnce(id);
+      hatData.addItem(item);
+      hatData.setCurrentItem(item);
+      log('$dkey call _onSelectCollection hatIds $id');
+    });
 
-    if (collection.pantsId.isNotEmpty)
-      g_itemService.readOnce(collection.pantsId).then((value) => g_localItemsService[PANTS]!.set(value));
+    final shirtData = g_localItemsData[EType.Shirt]!;
+    shirtData.removeAllItems();
+    await Future.forEach(collection.shirtIds, (String id) async {
+      final Item item = await g_itemService.readOnce(id);
+      shirtData.addItem(item);
+      shirtData.setCurrentItem(item);
+      log('$dkey call _onSelectCollection shirtIds $id');
+    });
 
-    if (collection.shoesId.isNotEmpty)
-      g_itemService.readOnce(collection.shoesId).then((value) => g_localItemsService[SHOES]!.set(value));
+    final pantsData = g_localItemsData[EType.Pants]!;
+    pantsData.removeAllItems();
+    await Future.forEach(collection.pantsIds, (String id) async {
+      final Item item = await g_itemService.readOnce(id);
+      pantsData.addItem(item);
+      pantsData.setCurrentItem(item);
+      log('$dkey call _onSelectCollection pantsIds $id');
+    });
 
-    if (collection.backpackId.isNotEmpty)
-      g_itemService.readOnce(collection.backpackId).then((value) => g_localItemsService[BACKPACK]!.set(value));
+    final shoesData = g_localItemsData[EType.Shoes]!;
+    shoesData.removeAllItems();
+    await Future.forEach(collection.shoesIds, (String id) async {
+      final Item item = await g_itemService.readOnce(id);
+      shoesData.addItem(item);
+      shoesData.setCurrentItem(item);
+      log('$dkey call _onSelectCollection shoesIds $id');
+    });
 
+    final backpackData = g_localItemsData[EType.Backpack]!;
+    backpackData.removeAllItems();
+    await Future.forEach(collection.backpackIds, (String id) async {
+      final Item item = await g_itemService.readOnce(id);
+      backpackData.addItem(item);
+      backpackData.setCurrentItem(item);
+      log('$dkey call _onSelectCollection backpackIds $id');
+    });
+
+    await EasyLoading.dismiss();
     context.router.pop();
   }
 
-  _onDeleteCollection(ClothesCollection collection) {
-    clothesCollectionService.delete(collection.id);
+  _onDeleteCollection(Collection collection) async {
+    EasyLoading.show(status: 'Deleting...');
+    await g_collection2Service.delete(collection.id);
+    EasyLoading.dismiss();
   }
 
   //------------------UI WIDGETS--------------------------//

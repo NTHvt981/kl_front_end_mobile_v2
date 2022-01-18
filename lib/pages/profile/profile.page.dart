@@ -5,14 +5,14 @@ import 'package:do_an_ui/services/customer.service.dart';
 import 'package:do_an_ui/services/image.service.dart';
 import 'package:do_an_ui/services/user.data.dart';
 import 'package:do_an_ui/shared/colors.dart';
-import 'package:do_an_ui/shared/header.widget.dart';
-import 'package:do_an_ui/shared/image_background.widget.dart';
+import '../../shared/widgets/header.widget.dart';
+import '../../shared/widgets/image_background.widget.dart';
 import 'package:flutter/services.dart';
-import '../../shared/label.widget.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
-import 'package:do_an_ui/shared/rounded_button.widget.dart';
-import 'package:do_an_ui/shared/rounded_edit.widget.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import '../../shared/widgets/label.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_button.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_edit.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:do_an_ui/shared/values.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -85,6 +85,7 @@ class _ProfilePageState extends State<ProfilePage> {
     _nameCon.text = _user.name;
     _phoneCon.text = _user.phoneNumber;
     _addrCon.text = _user.address;
+    _emailCon.text = _user.email;
   }
 
   @override
@@ -198,49 +199,51 @@ class _ProfilePageState extends State<ProfilePage> {
 
   RoundedEditWidget _edtName() {
     return _edt(
-      _nameCon,
-      TextInputType.emailAddress,
-      Icons.person,
+      controller: _nameCon,
+      inputType: TextInputType.emailAddress,
+      prefixIcon: Icons.person,
     );
   }
 
   RoundedEditWidget _edtEmail() {
     return _edt(
-      _emailCon,
-      TextInputType.emailAddress,
-      Icons.email_outlined,
+      controller: _emailCon,
+      inputType: TextInputType.emailAddress,
+      prefixIcon: Icons.email_outlined,
+      readOnly: true
     );
   }
 
   RoundedEditWidget _edtDob() {
     return _edt(
-      _dobCon,
-      TextInputType.datetime,
-      Icons.calendar_today,
+      controller: _dobCon,
+      inputType: TextInputType.datetime,
+      prefixIcon: Icons.calendar_today,
     );
   }
 
   RoundedEditWidget _edtPhoneNumber() {
     return _edt(
-      _phoneCon,
-      TextInputType.phone,
-      Icons.phone,
+      controller: _phoneCon,
+      inputType: TextInputType.phone,
+      prefixIcon: Icons.phone,
     );
   }
 
   RoundedEditWidget _edtAddress() {
     return _edt(
-      _addrCon,
-      TextInputType.text,
-      Icons.home,
+      controller: _addrCon,
+      inputType: TextInputType.text,
+      prefixIcon: Icons.home,
     );
   }
 
-  RoundedEditWidget _edt(
-      TextEditingController controller,
-      TextInputType inputType,
-      IconData prefixIcon
-      ) {
+  RoundedEditWidget _edt( {
+      required TextEditingController controller,
+      required TextInputType inputType,
+      required IconData prefixIcon,
+      bool readOnly = false
+      }) {
     return RoundedEditWidget(
       controller: controller,
       cursorColor: DARK_BLUE,
@@ -249,6 +252,7 @@ class _ProfilePageState extends State<ProfilePage> {
       prefixIcon: prefixIcon,
       roundness: 15,
       inputType: inputType,
+      readOnly: readOnly,
     );
   }
 }

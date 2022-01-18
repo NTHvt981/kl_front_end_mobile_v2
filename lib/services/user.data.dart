@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:do_an_ui/models/customer.model.dart';
 import 'package:do_an_ui/services/customer.service.dart';
@@ -28,11 +29,14 @@ class UserData {
     }
 
     _customerService.readLive(uid).listen((user) {
+      log('[UserData] call update user');
       if (user != null) {
+        log('[UserData] update user, current ticket ${user.ticket.toString()}');
         _set(user);
       }
     });
 
+    log('[UserData] call _initialize');
     _isInitialized = true;
   }
 

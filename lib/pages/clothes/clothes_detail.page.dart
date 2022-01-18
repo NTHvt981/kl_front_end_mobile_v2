@@ -1,38 +1,35 @@
 import 'dart:developer';
-import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:do_an_ui/main.dart';
 import 'package:do_an_ui/models/item.model.dart';
-import 'package:do_an_ui/pages/clothes/select_item.dialog.dart';
 import 'package:auto_route/auto_route.dart';
+import 'package:do_an_ui/pages/clothes/selectable.items2.drawer.dart';
+import 'package:do_an_ui/shared/clothes/type.enum.dart';
+import '../../services/clothes/body_stat.data.dart';
+import 'package:do_an_ui/services/clothes/collection.service.dart';
+import 'package:do_an_ui/services/clothes/item.service.dart';
+import 'package:do_an_ui/services/clothes/local_item.data.dart';
 import 'package:do_an_ui/services/image.service.dart';
 import 'package:do_an_ui/shared/common.dart';
+import '../../shared/clothes/size.enum.dart';
 import 'package:flutter/services.dart';
-import '../make_order/cart.page.dart';
-import 'package:do_an_ui/pages/order/create_order.page.dart';
 import 'package:do_an_ui/routes/router.gr.dart';
-import 'package:do_an_ui/services/clothes_collection.service.dart';
-import 'package:do_an_ui/services/item.service.dart';
-import 'package:do_an_ui/services/local_item.service.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:do_an_ui/shared/bottom_nav.widget.dart';
 import 'package:do_an_ui/shared/colors.dart';
-import 'package:do_an_ui/shared/floating_camera.widget.dart';
-import 'package:do_an_ui/shared/header.widget.dart';
-import 'items.drawer.dart';
-import 'package:do_an_ui/shared/percentage_pos.widget.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
-import 'package:do_an_ui/shared/rounded_button.widget.dart';
+import '../../shared/widgets/floating_camera.widget.dart';
+import '../../shared/widgets/header.widget.dart';
+import '../../shared/widgets/percentage_pos.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_button.widget.dart';
 import 'package:do_an_ui/shared/setting.drawer.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:numberpicker/numberpicker.dart';
 import 'package:screenshot/screenshot.dart';
-
-import 'movable_item.widget.dart';
+import 'immovable.item.widget.dart';
+import 'selectable.items.drawer.dart';
 
 class ClothesDetailPage extends StatefulWidget {
   final String userId;
@@ -48,56 +45,35 @@ class ClothesDetailPage extends StatefulWidget {
 
 class _ClothesDetailPageState extends State<ClothesDetailPage> {
   //------------------PRIVATE ATTRIBUTES------------------//
-  Map<String, MovableItemWidget> _itemWidgets = {};
   List<Item> _allItems = [];
   List<Item> _displayedItems = [];
-  String _displayedType = '';
+  EType _displayedType = EType.Hat;
   final _screenshotController = ScreenshotController();
   final _imageService = g_imageService;
-  final DEBUG_KEY = "[DEBUG CLOTHES DETAIL]";
+  final dkey = "[ClothesDetail2Page]";
 
   //------------------OVERRIDE  METHODS----------------------//
   @override
   void initState() {
     super.initState();
+    log(dkey + 'call initState');
     g_itemService.readAllLive().listen((items) {
-      log(DEBUG_KEY + 'Read all items length ${items.length}');
+      log(dkey + 'Read all items length ${items.length}');
       setState(() {
         _allItems = items;
       });
     });
-
-    _setDefaultItemWidgets();
   }
 
   //------------------PRIVATE METHODS---------------------//
-  void _onItemPress(String type) {
-    _displayedItems.clear();
-    _allItems.forEach((item) {
-      if (item.type == type)
-        _displayedItems.add(item);
-    });
-
-    setState(() {
-      _displayedType = type;
-    });
-
-    // SelectItemDialogHelper.show(context, _displayedItems, _type);
-    _scaffoldKey.currentState!.openDrawer();
-  }
-
-  void _onItemMovePress(MovableItemWidget caller) {
-    setState(() {
-    });
-  }
-
   _goToOrder() async {
     context.router.push(CartPageRoute(userId: widget.userId));
   }
 
-  void _goToCollections() {
+  void _goToCollections() async {
     String uid = FirebaseAuth.instance.currentUser!.uid;
-    context.router.push(CollectionListPageRoute(userId: uid));
+    await context.router.push(CollectionListPageRoute(userId: uid));
+    setState(() { });
   }
 
   void _onSaveCollection() async {
@@ -106,7 +82,7 @@ class _ClothesDetailPageState extends State<ClothesDetailPage> {
     var imageData = await _imageService.takeScreenShot(_screenshotController);
     if (imageData == null) return;
 
-    var imageUrl = await _imageService.uploadScreenShot(imageData, randomId);
+    var imageUrl = await _imageService.uploadFileData(imageData, randomId);
 
     var result = await _saveCollection(widget.userId, imageUrl);
     if (result) {
@@ -115,31 +91,20 @@ class _ClothesDetailPageState extends State<ClothesDetailPage> {
   }
 
   Future<bool> _saveCollection(String uid, String imageUrl) async {
-    var result = false;
-
-    await clothesCollectionService.create(uid, imageUrl).then(
-        (value) {
-          log(DEBUG_KEY + "Save collection to firebase success");
-          result = true;
-        },
-        onError: (err) {
-          log(DEBUG_KEY + "Save collection to firebase error: ${err.toString()}");
-          result = true;
-        }
-        );
+    EasyLoading.show(status: 'Saving...');
+    var result = await g_collection2Service.create(uid, imageUrl);
+    await EasyLoading.dismiss();
+    if (result) {
+      await EasyLoading.showSuccess('Save success', duration: Duration(seconds: 1));
+    } else {
+      await EasyLoading.showError('Save fail', duration: Duration(seconds: 1));
+    }
     return result;
   }
 
   void _goToArPage() {
     // context.router.push(ArPageRoute());
-    context.router.push(Ar2PageRoute());
-  }
-
-  void _onRefresh() {
-    g_localItemsService..forEach((type , service) {
-      service.clear();
-    });
-    setState(() {});
+    context.router.push(ArPageRoute());
   }
 
   //------------------UI WIDGETS--------------------------//
@@ -159,8 +124,23 @@ class _ClothesDetailPageState extends State<ClothesDetailPage> {
 
     return Scaffold(
       key: _scaffoldKey,
-      endDrawer: SettingDrawerWidget(),
-      drawer: ItemsDrawerWidget(items: _displayedItems, type: _displayedType,),
+      endDrawer: SettingDrawer(),
+      // drawer: SelectableItemsDrawer(
+      //   items: _displayedItems,
+      //   type: _displayedType,
+      //   onAddItem: _onAddItem,
+      //   onRemoveItem: _onRemoveItem,
+      //   onChangeSize: _onChangeSize,
+      // ),
+
+      drawer: SelectableItems2Drawer(
+        items: _displayedItems,
+        type: _displayedType,
+        onAddItem: _onAddItem,
+        onRemoveItem: _onRemoveItem,
+        onChangeSize: _onChangeSize,
+      ),
+
       body: Container(
         color: WHITE,
         child: PercentageSizeWidget(
@@ -171,17 +151,18 @@ class _ClothesDetailPageState extends State<ClothesDetailPage> {
               controller: _screenshotController,
               child: Stack(
                 children: [
-                  ..._itemWidgets.values,
+                  _item(EType.Hat),
+                  _item(EType.Shirt),
+                  _item(EType.Pants),
+                  _item(EType.Shoes),
+                  _item(EType.Backpack),
                   _btnGoToOrder(),
                   _btnSave(),
                   _btnGoToCollections(),
+                  _rowHeightWeight()
                 ],
               ),
             ),
-            Container(
-              alignment: Alignment.topRight,
-              padding: EdgeInsets.all(16.0),
-              child: _btnRefresh(),),
           ],),
         ),
       ),
@@ -190,19 +171,16 @@ class _ClothesDetailPageState extends State<ClothesDetailPage> {
     );
   }
 
-  Widget _btnRefresh() {
-    return ClipOval(
-      child: Material(
-        color: MEDIUM_BLUE, // Button color
-        child: InkWell(
-          splashColor: DARK_BLUE, // Splash color
-          onTap: _onRefresh,
-          child: SizedBox(
-              width: 56, height: 56,
-              child: Icon(Icons.refresh, color: WHITE,)
-          ),
-        ),
-      ),
+  Widget _item(EType type) {
+    // return ImmovableItemWidget(
+    //               type: type,
+    //               onOpenDrawer: _onOpenDrawer,
+    //               onSwitchIndex: _onSwitchIndex,
+    //             );
+    return ImmovableItemWidget(
+      type: type,
+      onOpenDrawer: _onOpenDrawer,
+      onSwitchIndex: _onSwitchIndex,
     );
   }
 
@@ -275,40 +253,149 @@ class _ClothesDetailPageState extends State<ClothesDetailPage> {
   }
 
   //------------------PRIVATE METHODS---------------------//
-  void _setDefaultItemWidgets() {
-    _itemWidgets[HAT] = MovableItemWidget(
-      key: GlobalKey(),
-      type: HAT,
-      onPress: _onItemPress,
-      onPositionPress: _onItemMovePress,
-    );
+  void _onOpenDrawer(EType type) {
+    _displayedItems.clear();
+    _allItems.forEach((item) {
+      if (item.type == type)
+        _displayedItems.add(item);
+    });
 
-    _itemWidgets[SHIRT] = MovableItemWidget(
-      key: GlobalKey(),
-      type: SHIRT,
-      onPress: _onItemPress,
-      onPositionPress: _onItemMovePress,
-    );
+    setState(() {
+      _displayedType = type;
+    });
 
-    _itemWidgets[PANTS] = MovableItemWidget(
-      key: GlobalKey(),
-      type: PANTS,
-      onPress: _onItemPress,
-      onPositionPress: _onItemMovePress,
-    );
+    // SelectItemDialogHelper.show(context, _displayedItems, _type);
+    _scaffoldKey.currentState!.openDrawer();
+  }
 
-    _itemWidgets[SHOES] = MovableItemWidget(
-      key: GlobalKey(),
-      type: SHOES,
-      onPress: _onItemPress,
-      onPositionPress: _onItemMovePress,
-    );
+  void _onSwitchIndex(EType type) {
+    log('[DEBUG CLOTHES DETAIL] call _onSwitchIndex type $type');
+    // final items = _mapAllItems[type]!;
+    // var currentId = _mapShownIndex[type];
+    final data = g_localItemsData[type]!;
+    final items = data.getItems();
+    var currentId = data.getCurrentId();
 
-    _itemWidgets[BACKPACK] = MovableItemWidget(
-      key: GlobalKey(),
-      type: BACKPACK,
-      onPress: _onItemPress,
-      onPositionPress: _onItemMovePress,
+    if (items.isNotEmpty) {
+      final list = items.keys.toList();
+      if (currentId != null) {
+        var index = list.indexOf(currentId);
+        index++;
+        if (index >= list.length) index = 0;
+        setState(() {
+          data.setCurrentId(list[index]);
+        });
+      } else {
+        setState(() {
+          data.setCurrentId(list.first);
+        });
+      }
+    }
+  }
+
+  _onAddItem(Item item) {
+    log('[DEBUG CLOTHES DETAIL] Choose item ${item.id}');
+    final data = g_localItemsData[item.type]!;
+    setState(() {
+      data.addItem(item);
+      data.setCurrentItem(item);
+    });
+  }
+
+  _onRemoveItem(Item item) {
+    log('[DEBUG CLOTHES DETAIL] Choose item ${item.id}');
+    final data = g_localItemsData[item.type]!;
+    setState(() {
+      data.removeItem(item);
+    });
+  }
+
+  _onChangeSize(Item item, ESize size) {
+    log('[DEBUG CLOTHES DETAIL] Change size item ${item.id} size ${size.name}');
+    final data = g_localItemsData[item.type]!;
+    setState(() {
+      data.setSize(item, size);
+    });
+  }
+
+  Widget _rowHeightWeight() {
+    return Container(
+      alignment: Alignment.topLeft,
+      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 72.0),
+      child: Column(
+        children: [
+          _edtHeight(),
+          _edtWeight(),
+        ],
+      ),
     );
+  }
+  Widget _edtHeight() {
+    return Row(
+      children: [
+        Text('Height: '),
+        NumberPicker(
+          minValue: 0,
+          maxValue: 250,
+          axis: Axis.vertical,
+          value: g_bodyStat.height,
+          onChanged: _onChangeHeight,
+          textMapper: (value) {
+            return (g_bodyStat.height / 100.0).toString();
+          },
+          itemCount: 1,
+          itemHeight: 32.0,
+          itemWidth: 64.0,
+        ),
+        Text(' m'),
+      ],
+    );
+  }
+
+  Widget _edtWeight() {
+    return Row(
+      children: [
+        Text('Weight: '),
+        NumberPicker(
+          minValue: 0,
+          maxValue: 150,
+          axis: Axis.horizontal,
+          value: g_bodyStat.weight,
+          onChanged: _onChangeWeight,
+          itemCount: 1,
+          itemHeight: 32.0,
+          itemWidth: 50.0,
+        ),
+        Text(' kg'),
+      ],
+    );
+  }
+
+  void _onChangeWeight(value) {
+    _setSizeAll();
+    setState(() {
+      g_bodyStat.weight = value;
+    });
+  }
+
+  void _onChangeHeight(value) {
+    _setSizeAll();
+    setState(() {
+      g_bodyStat.height = value;
+    });
+  }
+
+  void _setSizeAll() {
+    final size = g_bodyStat.toEsize();
+    g_localItemsData.forEach((key, data) {
+      data.setSizeAll(size);
+    });
+  }
+
+  @override
+  void setState(fn) {
+    if(mounted) {
+      super.setState(fn);
+    }
   }
 }

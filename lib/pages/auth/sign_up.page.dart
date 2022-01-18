@@ -6,11 +6,11 @@ import 'package:do_an_ui/services/customer.service.dart';
 import 'package:do_an_ui/services/face_recognition/camera.service.dart';
 import 'package:do_an_ui/shared/colors.dart';
 import 'package:do_an_ui/shared/icons.dart';
-import '../../shared/label.widget.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
-import 'package:do_an_ui/shared/rounded_button.widget.dart';
-import 'package:do_an_ui/shared/rounded_edit.widget.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import '../../shared/widgets/label.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_button.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_edit.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:do_an_ui/shared/values.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -45,7 +45,7 @@ class _SignUpPageState extends State<SignUpPage> {
         password: password
     ).then((cred) async {
       //Create customer in database
-      var customer = Customer(cred.user!.uid);
+      var customer = Customer(id: cred.user!.uid, email: email);
       await _customerService.create(customer);
 
       _sendVerifyEmail(cred.user!);

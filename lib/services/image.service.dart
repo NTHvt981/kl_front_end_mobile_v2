@@ -26,10 +26,10 @@ class ImageService {
     return url;
   }
 
-  Future<String> uploadScreenShot(Uint8List imageData, String fileName) async {
+  Future<String> uploadFileData(Uint8List data, String fileName) async {
     final tempDir = await getTemporaryDirectory();
     File file = await File('${tempDir.path}/image.jpg').create();
-    file.writeAsBytesSync(imageData);
+    file.writeAsBytesSync(data);
 
     String imageUrl = await uploadFile(file, fileName);
 

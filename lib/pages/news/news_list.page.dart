@@ -9,10 +9,10 @@ import 'package:do_an_ui/routes/router.gr.dart';
 import 'package:do_an_ui/services/news.service.dart';
 import 'package:do_an_ui/shared/bottom_nav.widget.dart';
 import 'package:do_an_ui/shared/colors.dart';
-import 'package:do_an_ui/shared/header.widget.dart';
+import '../../shared/widgets/header.widget.dart';
 import 'package:do_an_ui/shared/setting.drawer.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -65,7 +65,7 @@ class _NewsListPageState extends State<NewsListPage> {
         ],
       ),
       bottomNavigationBar: BottomNavWidget(index: 0,),
-      endDrawer: SettingDrawerWidget(),
+      endDrawer: SettingDrawer(),
     );
   }
 

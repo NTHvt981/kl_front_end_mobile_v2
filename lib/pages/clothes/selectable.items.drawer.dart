@@ -1,17 +1,25 @@
 import 'package:do_an_ui/models/item.model.dart';
-import 'package:do_an_ui/services/local_item.service.dart';
+import 'package:do_an_ui/shared/clothes/type.enum.dart';
 import 'package:do_an_ui/shared/colors.dart';
-import 'item.widget.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import '../../shared/clothes/size.enum.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:flutter/material.dart';
 
-class ItemsDrawerWidget extends StatelessWidget {
-  final List<Item> items;
-  final String type;
+import 'selectable.item.widget.dart';
 
-  ItemsDrawerWidget({
+class SelectableItemsDrawer extends StatelessWidget {
+  final List<Item> items;
+  final EType type;
+  final Function(Item) onAddItem;
+  final Function(Item item) onRemoveItem;
+  final Function(Item item, ESize size) onChangeSize;
+
+  SelectableItemsDrawer({
     required this.items,
     required this.type,
+    required this.onAddItem,
+    required this.onRemoveItem,
+    required this.onChangeSize,
   });
 
   @override
@@ -24,7 +32,7 @@ class ItemsDrawerWidget extends StatelessWidget {
             DrawerHeader(
               child: Center(
                 child: WhiteBoldTextWidget(
-                  text: type,
+                  text: type.name,
                   size: 32,
                 ),
               ),
@@ -32,9 +40,11 @@ class ItemsDrawerWidget extends StatelessWidget {
             Expanded(
               child: ListView.builder(
                 itemBuilder: (context, position) {
-                  return ItemWidget(
+                  return SelectableItemWidget(
                     item: items[position],
-                    onSelect: (Item item) {_onSelectItem(item, context);},
+                    onAddItem: onAddItem,
+                    onRemoveItem: onRemoveItem,
+                    onChangeSize: onChangeSize,
                   );
                 },
                 itemCount: items.length,
@@ -44,11 +54,5 @@ class ItemsDrawerWidget extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  _onSelectItem(Item item, BuildContext context) {
-    String type = item.type;
-    g_localItemsService[type]!.set(item);
-    Navigator.of(context).pop();
   }
 }

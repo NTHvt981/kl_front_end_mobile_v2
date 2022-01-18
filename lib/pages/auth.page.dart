@@ -1,13 +1,12 @@
 import 'dart:developer';
 
-import 'package:do_an_ui/pages/test/loading.test.page.dart';
 import 'package:do_an_ui/services/face_recognition/camera.service.dart';
 import 'package:do_an_ui/shared/colors.dart';
 import 'package:do_an_ui/shared/common.dart';
-import 'package:do_an_ui/shared/image_background.widget.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
-import 'package:do_an_ui/shared/rounded_button.widget.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import '../shared/widgets/image_background.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_button.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:do_an_ui/routes/router.gr.dart';

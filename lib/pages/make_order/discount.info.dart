@@ -8,12 +8,12 @@ import 'package:do_an_ui/services/customer.service.dart';
 import 'package:do_an_ui/services/orders/discount.data.dart';
 import 'package:do_an_ui/services/user.data.dart';
 import 'package:do_an_ui/shared/colors.dart';
-import 'package:do_an_ui/shared/header.widget.dart';
-import '../../shared/label.widget.dart';
-import 'package:do_an_ui/shared/percentage_size.widget.dart';
-import 'package:do_an_ui/shared/rounded_button.widget.dart';
-import 'package:do_an_ui/shared/rounded_edit.widget.dart';
-import 'package:do_an_ui/shared/text.widget.dart';
+import '../../shared/widgets/header.widget.dart';
+import '../../shared/widgets/label.widget.dart';
+import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_button.widget.dart';
+import 'package:do_an_ui/shared/widgets/rounded_edit.widget.dart';
+import 'package:do_an_ui/shared/widgets/text.widget.dart';
 import 'package:do_an_ui/shared/values.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -155,7 +155,7 @@ class _DiscountInfoPageState extends State<DiscountInfoPage> {
             Container(
               alignment: Alignment.center,
               child: TextWidget(
-                text: '${DiscountData().usedTickets} ticket discount for ${formatMoney(DiscountData().usedTickets * 5000)}',
+                text: '${DiscountData().usedTickets} ticket discount for ${formatMoney(DiscountData().usedTickets * 10000)}',
                 size: FONT_SIZE_1,
                 bold: false,
                 color: MEDIUM_GRAY,
@@ -284,5 +284,12 @@ class _DiscountInfoPageState extends State<DiscountInfoPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void setState(fn) {
+    if(mounted) {
+      super.setState(fn);
+    }
   }
 }

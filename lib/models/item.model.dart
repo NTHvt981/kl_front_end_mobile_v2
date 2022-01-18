@@ -1,14 +1,16 @@
-//import 'package:cloud_firestore/cloud_firestore.dart';
+// const HAT = 'Hat';
+// const SHIRT = 'Shirt';
+// const PANTS = 'Pants';
+// const SHOES = 'Shoes';
+// const BACKPACK = 'Backpack';
 
-const HAT = 'Hat';
-const SHIRT = 'Shirt';
-const PANTS = 'Pants';
-const SHOES = 'Shoes';
-const BACKPACK = 'Backpack';
+import 'package:do_an_ui/shared/clothes/specific_type.enum.dart';
+import 'package:do_an_ui/shared/clothes/type.enum.dart';
 
 const ID = 'Ma';
 const NAME = 'Ten';
 const TYPE = 'Loai';
+const SPECIFIC_TYPE = 'PhanLoai';
 const IMAGE_URL = 'Hinh';
 const DESCRIPTION = 'MoTa';
 const NUMBER = 'SoLuong';
@@ -22,10 +24,12 @@ const RIGHT_OFFSET = 'OffsetPhai';
 const TOP_OFFSET = 'OffsetTren';
 const BOTTOM_OFFSET = 'OffsetDuoi';
 
+//item of clothes
 class Item {
   late String id;
   late String name;
-  late String type;
+  late EType type;
+  late ESpecificType specificType;
   late String imageUrl;
   late String description;
   late int number;
@@ -44,7 +48,8 @@ class Item {
   Map<String, dynamic> toMap() => {
     ID: id,
     NAME: name,
-    TYPE: type,
+    TYPE: type.name,
+    SPECIFIC_TYPE: specificType.name,
     IMAGE_URL: imageUrl,
     DESCRIPTION: description,
     NUMBER: number,
@@ -63,7 +68,8 @@ class Item {
         assert(map[ID] != null),
         id = map[ID],
         name = map[NAME],
-        type = map[TYPE],
+        type = (map[TYPE] as String).toEType(),
+        specificType = (map[SPECIFIC_TYPE] as String).toESpecificType(),
         imageUrl = map[IMAGE_URL],
         description = map[DESCRIPTION],
         number = map[NUMBER],
@@ -76,4 +82,12 @@ class Item {
         rightOffset = (map[RIGHT_OFFSET] as num).toDouble(),
         topOffset = (map[TOP_OFFSET] as num).toDouble(),
         bottomOffset = (map[BOTTOM_OFFSET] as num).toDouble();
+
+  bool isSP() {
+    return type == EType.Shirt || type == EType.Pants;
+  }
+
+  bool isSH() {
+    return type == EType.Shoes;
+  }
 }
