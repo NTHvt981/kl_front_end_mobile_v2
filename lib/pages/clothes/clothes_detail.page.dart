@@ -125,13 +125,6 @@ class _ClothesDetailPageState extends State<ClothesDetailPage> {
     return Scaffold(
       key: _scaffoldKey,
       endDrawer: SettingDrawer(),
-      // drawer: SelectableItemsDrawer(
-      //   items: _displayedItems,
-      //   type: _displayedType,
-      //   onAddItem: _onAddItem,
-      //   onRemoveItem: _onRemoveItem,
-      //   onChangeSize: _onChangeSize,
-      // ),
 
       drawer: SelectableItems2Drawer(
         items: _displayedItems,

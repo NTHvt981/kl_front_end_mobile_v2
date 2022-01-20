@@ -107,7 +107,7 @@ class ImmovableItemWidget extends StatelessWidget {
   }
 
   void _adjustForPants(Size screenSize, double scale) {
-    _size = Size(g_screenSize.width/2, g_screenSize.width/2) * scale;
+    _size = Size(g_screenSize.width/3, g_screenSize.width/2) * scale;
     _offset = Offset(
       (g_screenSize.width - _size.width) / 2,
       (g_screenSize.height - _size.height) / 2 + screenSize.height/12,

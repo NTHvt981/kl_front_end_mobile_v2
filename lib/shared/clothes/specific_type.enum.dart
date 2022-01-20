@@ -7,7 +7,8 @@ const _T_SHIRT = 'T-Shirt';
 const _JACKET = 'Jacket';
 const _JEANS = 'Jeans';
 const _SHORTS = 'Shorts';
-const _SKIRT = 'Skirt';
+const _SHORT_SKIRT = 'Short skirts';
+const _LONG_SKIRT = 'Long skirts';
 const _GYM_PANTS = 'Gym Pants';
 const _KAKI = 'Kaki';
 const _BACKPACK = 'Backpack';
@@ -24,7 +25,8 @@ enum ESpecificType {
   Jacket,
   Jeans,
   Shorts,
-  Skirt,
+  ShortSkirt,
+  LongSkirt,
   Gym_Pants,
   Kaki,
   Backpack,
@@ -42,7 +44,8 @@ final mapESpecificTypeToName = {
   ESpecificType.Jacket : _JACKET,
   ESpecificType.Jeans : _JEANS,
   ESpecificType.Shorts : _SHORTS,
-  ESpecificType.Skirt : _SKIRT,
+  ESpecificType.ShortSkirt : _SHORT_SKIRT,
+  ESpecificType.LongSkirt : _LONG_SKIRT,
   ESpecificType.Gym_Pants : _GYM_PANTS,
   ESpecificType.Kaki : _KAKI,
   ESpecificType.Backpack : _BACKPACK,
@@ -60,7 +63,8 @@ final mapESpecificTypeToPath = {
   ESpecificType.Jacket : 'images/placeholders/spec jacket.png',
   ESpecificType.Jeans : 'images/placeholders/spec jeans.png',
   ESpecificType.Shorts : 'images/placeholders/spec shorts.png',
-  ESpecificType.Skirt : 'images/placeholders/spec skirt.png',
+  ESpecificType.ShortSkirt : 'images/placeholders/spec short skirts.png',
+  ESpecificType.LongSkirt : 'images/placeholders/spec long skirts.png',
   ESpecificType.Gym_Pants : 'images/placeholders/pants.png',
   ESpecificType.Kaki : 'images/placeholders/pants.png',
   ESpecificType.Backpack : 'images/placeholders/spec backpack.png',
@@ -78,7 +82,8 @@ final mapNameToESpecificType = {
   _JACKET : ESpecificType.Jacket,
   _JEANS : ESpecificType.Jeans,
   _SHORTS : ESpecificType.Shorts,
-  _SKIRT : ESpecificType.Skirt,
+  _SHORT_SKIRT : ESpecificType.ShortSkirt,
+  _LONG_SKIRT : ESpecificType.LongSkirt,
   _GYM_PANTS : ESpecificType.Gym_Pants,
   _KAKI : ESpecificType.Kaki,
   _BACKPACK : ESpecificType.Backpack,

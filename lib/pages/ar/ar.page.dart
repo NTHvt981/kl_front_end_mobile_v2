@@ -12,6 +12,7 @@ import 'package:do_an_ui/services/clothes/body_stat.data.dart';
 import 'package:do_an_ui/services/clothes/local_item.data.dart';
 import 'package:do_an_ui/services/face_recognition/camera.service.dart';
 import 'package:do_an_ui/shared/ar/image_painter.dart';
+import 'package:do_an_ui/shared/clothes/specific_type.enum.dart';
 import 'package:do_an_ui/shared/clothes/type.enum.dart';
 import 'package:do_an_ui/shared/colors.dart';
 import '../../shared/widgets/header.widget.dart';
@@ -137,6 +138,8 @@ class _ArPageState extends State<ArPage> with WidgetsBindingObserver {
       final rightHip = marks[PoseLandmarkType.rightHip];
       final leftAnkle = marks[PoseLandmarkType.leftAnkle];
       final rightAnkle = marks[PoseLandmarkType.rightAnkle];
+      final leftKnee = marks[PoseLandmarkType.leftKnee];
+      final rightKnee = marks[PoseLandmarkType.rightKnee];
       final leftEar = marks[PoseLandmarkType.leftEar];
       final rightEar = marks[PoseLandmarkType.rightEar];
       final rightEye = marks[PoseLandmarkType.rightEye];
@@ -152,13 +155,30 @@ class _ArPageState extends State<ArPage> with WidgetsBindingObserver {
       }
 
       if (leftAnkle != null && rightAnkle != null && leftShoulder != null
-          && rightShoulder != null && leftHip != null) {
-        _setArPants(leftShoulder: leftShoulder, rightShoulder: rightShoulder, leftHip: leftHip,
-            leftAnkle: leftAnkle);
+          && rightShoulder != null && leftHip != null && leftKnee != null) {
+        final pantsItem = g_localItemsData[EType.Pants]!.getCurrentItem();
+        if (pantsItem != null) {
+          if (pantsItem.specificType == ESpecificType.ShortSkirt || pantsItem.specificType == ESpecificType.Shorts) {
+            _setArPants(
+                leftShoulder: leftShoulder,
+                rightShoulder: rightShoulder,
+                leftHip: leftHip,
+                leftAnkle: leftKnee
+            );
+          } else {
+            _setArPants(
+                leftShoulder: leftShoulder,
+                rightShoulder: rightShoulder,
+                leftHip: leftHip,
+                leftAnkle: leftAnkle
+            );
+          }
+        }
       }
 
       if (leftEar != null && rightEar != null && rightEye != null) {
-        _setArHat(leftEar: leftEar, rightEar: rightEar, rightEye: rightEye);
+        _setArHat(leftEar: leftEar, rightEar: rightEar, rightEye: rightEye,
+            leftShoulder: leftEar, rightShoulder: rightEar);
       }
 
       if (leftWrist != null && leftPinky != null && leftIndex != null
@@ -185,7 +205,18 @@ class _ArPageState extends State<ArPage> with WidgetsBindingObserver {
     required PoseLandmark leftEar,
     required PoseLandmark rightEar,
     required PoseLandmark rightEye,
+    required PoseLandmark leftShoulder,
+    required PoseLandmark rightShoulder,
 }) {
+    if (leftShoulder.x > rightShoulder.x) {
+      setState(() {
+        _arDatas[EType.Hat]!.canShow = true;
+      });
+    } else {
+      setState(() {
+        _arDatas[EType.Hat]!.canShow = false;
+      });
+    }
     final disEarToEye = (rightEar.y - rightEye.y) * 2;
     setState(() {
       _arDatas[EType.Hat]!.area = Rect.fromLTRB(
@@ -297,7 +328,7 @@ class _ArPageState extends State<ArPage> with WidgetsBindingObserver {
       //   _arDatas[BACKPACK]!.canShow = true;
       // });
       final midX = (leftShoulder.x + rightShoulder.x) / 2;
-      final midY = (leftShoulder.y + leftHip.y) / 2;
+      final midY = (leftShoulder.y + leftHip.y) / 2.1;
       final width = (leftShoulder.x - rightShoulder.x).abs() * 0.8;
       final height = (leftShoulder.y - leftHip.y).abs() * 0.6;
 

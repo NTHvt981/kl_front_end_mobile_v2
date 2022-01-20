@@ -7,6 +7,7 @@ const NAME = 'HoTen';
 const EMAIL = 'Email';
 const PHONE_NUMBER = 'SoDienThoai';
 const ADDRESS = 'DiaChi';
+const COLLECTION_SAVED = 'BoQuanAoLuu';
 const IMAGE = 'HinhAnh';
 const POINT = 'SoDiemTichLuy';
 const TICKET = 'SoPhieuKhuyenMai';
@@ -15,6 +16,7 @@ class Customer {
   late String id;
   late String name;
   late String email;
+  late int savedCollections;
   late String phoneNumber;
   late String address;
   late String imageUrl;
@@ -24,6 +26,7 @@ class Customer {
   Customer({required this.id, required this.email}) {
     point = 0;
     ticket = 0;
+    savedCollections = 0;
     name = "";
     phoneNumber = "";
     address = "";
@@ -33,6 +36,7 @@ class Customer {
   Map<String, dynamic> toMap() => {
     ID: id,
     NAME: name,
+    COLLECTION_SAVED: savedCollections,
     EMAIL: email,
     PHONE_NUMBER: phoneNumber,
     ADDRESS: address,
@@ -45,6 +49,7 @@ class Customer {
         assert(map[ID] != null),
         id = map[ID],
         email = map[EMAIL],
+        savedCollections = map[COLLECTION_SAVED] != null? map[COLLECTION_SAVED]: 0,
         name = map[NAME] != null? map[NAME]: '',
         phoneNumber = map[PHONE_NUMBER] != null? map[PHONE_NUMBER]: '',
         address = map[ADDRESS] != null? map[ADDRESS]: '',

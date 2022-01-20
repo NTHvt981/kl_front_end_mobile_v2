@@ -26,6 +26,7 @@ class CustomerService {
   }
 
   Future<void> create(Customer cus) async {
+    cus.point = 100000;
     firestore.collection(root).doc(cus.id)
         .set(cus.toMap())
         .then((value) => log(_dkey + "Add Customer success"))

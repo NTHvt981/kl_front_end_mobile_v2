@@ -116,7 +116,7 @@ class _SignInPageState extends State<SignInPage> {
 
   void _reSendVerifyEmail(User user) {
     user.sendEmailVerification().catchError((err) {
-      Fluttertoast.showToast(msg: 'Send verify email fail ${err.toString()}');
+      // Fluttertoast.showToast(msg: 'Send verify email fail ${err.toString()}');
     }).then((value) {
       Fluttertoast.showToast(msg: 'We have sent you a verify email, please check it');
       context.router.pop();

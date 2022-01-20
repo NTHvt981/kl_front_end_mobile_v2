@@ -52,7 +52,7 @@ class ImagePainter extends material.CustomPainter {
         "${rect.bottom.toString()})");
     canvas.drawImageRect(image, imageRect, rect2, new Paint()
     );
-    canvas.drawRect(rect, debugPaint);
+    // canvas.drawRect(rect, debugPaint);
   }
 
   @override

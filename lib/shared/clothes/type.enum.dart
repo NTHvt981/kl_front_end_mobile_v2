@@ -35,7 +35,8 @@ final Map<EType, List<ESpecificType>> mapETypeToSpecificTypes = {
   EType.Pants : [
     ESpecificType.Jeans,
     ESpecificType.Shorts,
-    ESpecificType.Skirt,
+    ESpecificType.ShortSkirt,
+    ESpecificType.LongSkirt,
     //ESpecificType.Gym_Pants,
     //ESpecificType.Kaki
   ],

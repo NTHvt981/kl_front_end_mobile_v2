@@ -11,6 +11,7 @@ import 'package:do_an_ui/services/languages/translation.service.dart';
 import 'package:do_an_ui/services/message.service.dart';
 import 'package:do_an_ui/services/user.data.dart';
 import 'package:do_an_ui/shared/colors.dart';
+import 'package:flutter_icons/flutter_icons.dart';
 import '../../shared/widgets/header.widget.dart';
 import 'package:do_an_ui/shared/widgets/percentage_size.widget.dart';
 import 'package:do_an_ui/shared/widgets/rounded_edit.widget.dart';
@@ -48,7 +49,7 @@ class _MessageListPageState extends State<MessageListPage> {
   final dkey = '[MessageListPage]';
   final _imgPicker = ImagePicker();
   final _imgService = g_imageService;
-  double _chatContentsPer = 0.8;
+  bool _showImgPanel = false;
   File? _file;
   final List<Lang> _langs = List.of({
     Lang(id: TranslateLanguage.ENGLISH, name: 'English'),
@@ -142,20 +143,39 @@ class _MessageListPageState extends State<MessageListPage> {
     });
   }
 
+  void _toggleImgPanel() {
+    if (_showImgPanel) {
+      setState(() {
+        _showImgPanel = false;
+      });
+    } else {
+      setState(() {
+        _showImgPanel = true;
+      });
+    }
+  }
+
   void _getImageFromGallery() async {
     final XFile? image = await _imgPicker.pickImage(source: ImageSource.gallery);
+    _setImage(image);
+  }
+
+  void _getImageFromCamera() async {
+    final XFile? image = await _imgPicker.pickImage(source: ImageSource.camera);
+    _setImage(image);
+  }
+
+  void _setImage(XFile? image) {
     if (image != null) {
       dev.log('$dkey Create image success');
       setState(() {
         _file = File(image.path);
-        _chatContentsPer = 0.7;
       });
     }
   }
 
   void _resetImage() async {
     setState(() {
-      _chatContentsPer = 0.8;
       _file = null;
     });
   }
@@ -186,7 +206,7 @@ class _MessageListPageState extends State<MessageListPage> {
               _header(),
               _chatContents(),
               _inputSection(),
-              _file != null? _imgPreview(_file!): Container()
+              (_file != null) || (_showImgPanel)? _imgPanel(): Container()
             ],
           ),
         ),
@@ -196,7 +216,7 @@ class _MessageListPageState extends State<MessageListPage> {
 
   PercentageSizeWidget _chatContents() {
     return PercentageSizeWidget(
-            percentageHeight: _chatContentsPer,
+            percentageHeight: (_file != null) || (_showImgPanel)? 0.7: 0.8,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
               // child: MessageListWidget(data: _messages,),
@@ -215,7 +235,7 @@ class _MessageListPageState extends State<MessageListPage> {
         padding: const EdgeInsets.all(8.0),
         child: Row(
           children: [
-            IconButton(icon: Icon(Icons.image_outlined), onPressed: _getImageFromGallery),
+            IconButton(icon: Icon(Icons.image_outlined), onPressed: _toggleImgPanel),
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(left: 8.0, bottom: 6.0, top: 6.0),
@@ -250,15 +270,29 @@ class _MessageListPageState extends State<MessageListPage> {
     );
   }
 
-  Widget _imgPreview(File file) {
+  Widget _imgPanel() {
     return PercentageSizeWidget(
       percentageHeight: 0.1,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Image.file(file),
-          IconButton(onPressed: _resetImage, icon: Icon(Icons.highlight_remove_sharp)),
-        ],
+      child: Padding(
+        padding: EdgeInsets.only(bottom: 8.0),
+        child: Stack(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                IconButton(onPressed: _getImageFromCamera, icon: Icon(Icons.camera)),
+                IconButton(onPressed: _getImageFromGallery, icon: Icon(Icons.folder_open)),
+              ],
+            ),
+            (_file != null)? Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Image.file(_file!),
+                IconButton(onPressed: _resetImage, icon: Icon(Icons.highlight_remove_sharp)),
+              ],
+            ): Container(),
+          ],
+        ),
       ),
     );
   }

@@ -2,7 +2,9 @@ import 'dart:developer';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:do_an_ui/models/collection.model.dart';
+import 'package:do_an_ui/services/customer.service.dart';
 import 'package:do_an_ui/shared/useful.function.dart';
+import '../user.data.dart';
 import 'local_item.data.dart';
 
 
@@ -41,10 +43,13 @@ class CollectionService {
     Collection collection = new Collection();
     bool result = false;
 
+    var user = g_userData.currentUser();
+    user.savedCollections += 1;
+
     collection.userId = uid;
     collection.id = _firestore.collection(_root).doc().id;
     collection.imageUrl = imageUrl;
-    collection.name = formatID(collection.id);
+    collection.name = 'WARDROBE ' + user.savedCollections.toString();
     
     g_localItemsData.forEach((type, data) {
       final items = data.getItems();
@@ -59,6 +64,8 @@ class CollectionService {
     }).catchError((err) {
       log('$dkey Save fail error ${err.toString()}');
     });
+
+    g_customerService.update(user);
 
     return result;
   }
